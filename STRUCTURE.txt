@@ -1,0 +1,189 @@
+================================================================================
+                    STRUCTURE DU PROJET SOFCOS
+                  Plateforme E-commerce Complète
+================================================================================
+
+SOFCOS/
+│
+├── 📋 FICHIERS RACINE (Configuration & Accueil)
+│   ├── index.php                      (Page d'accueil)
+│   ├── config.php                     (Configuration générale)
+│   ├── composer.json                  (Dépendances PHP)
+│   ├── composer.lock                  (Versions des dépendances)
+│   ├── database.sql                   (Structure base de données)
+│   └── .gitignore                     (Fichiers ignorés Git)
+│
+│
+├── 🔐 AUTHENTIFICATION & COMPTE UTILISATEUR
+│   ├── connexion.php                  (Formulaire connexion)
+│   ├── inscription.php                (Formulaire inscription)
+│   ├── finaliser_inscription.php      (Finalisation inscription)
+│   ├── deconnexion.php                (Déconnexion)
+│   ├── mon-compte.php                 (Gestion compte utilisateur)
+│   ├── mot-de-passe-oublie.php        (Récupération mot de passe)
+│   ├── reset_password.php             (Réinitialiser mot de passe)
+│   ├── google_login.php               (Connexion Google)
+│   └── google_callback.php            (Callback Google OAuth)
+│
+│
+├── 🛍️  PANIER & COMMANDES
+│   ├── panier.php                     (Affichage panier)
+│   ├── panier-action.php              (Actions panier : ajouter, supprimer, etc)
+│   ├── commande.php                   (Affichage commandes)
+│   ├── valider_commande.php           (Validation/finalisation commande)
+│   ├── confirmation.php               (Confirmation commande)
+│   └── suivi.php                      (Suivi livraison)
+│
+│
+├── 📦 PRODUITS & CATALOGUE
+│   ├── produits.php                   (Liste des produits)
+│   └── produit-detail.php             (Détail d'un produit)
+│
+│
+├── 💳 PAIEMENT
+│   └── paiement.php                   (Traitement du paiement)
+│
+│
+├── 📞 CONTACT & MESSAGES
+│   ├── contact.php                    (Formulaire contact)
+│   └── details_message.php            (Détails d'un message)
+│
+│
+├── 📁 /admin/ (PANNEAU D'ADMINISTRATION)
+│   │
+│   ├── 🔐 AUTHENTIFICATION ADMIN
+│   │   ├── admins.php                 (Gestion des administrateurs)
+│   │   ├── register.php               (Enregistrement admin)
+│   │   ├── reset_password.php         (Réinitialiser mot de passe admin)
+│   │   ├── logout.php                 (Déconnexion admin)
+│   │   └── mon_compte.php             (Compte admin)
+│   │
+│   ├── 📊 TABLEAU DE BORD
+│   │   ├── dashboard.php              (Accueil admin)
+│   │   └── historique.php             (Historique des actions)
+│   │
+│   ├── 📦 GESTION DES PRODUITS
+│   │   ├── produits.php               (Liste des produits)
+│   │   ├── produits_ajout.php         (Ajout/Modification produits)
+│   │   ├── categories.php             (Gestion des catégories)
+│   │   └── marques.php                (Gestion des marques)
+│   │
+│   ├── 👥 GESTION DES CLIENTS
+│   │   ├── clients.php                (Liste des clients)
+│   │   └── client_details.php         (Détails d'un client)
+│   │
+│   ├── 📦 GESTION DES COMMANDES
+│   │   ├── commandes.php              (Liste des commandes)
+│   │   ├── details_commande.php       (Détails d'une commande)
+│   │   ├── imprimer_commande.php      (Impression commande)
+│   │   ├── bon_livraison.php          (Bon de livraison)
+│   │   └── ticket_commande.php        (Ticket de commande)
+│   │
+│   ├── 🚚 GESTION DES LIVRAISONS
+│   │   └── livraisons.php             (Suivi des livraisons)
+│   │
+│   ├── 👨‍💼 ÉQUIPE LIVREURS
+│   │   └── equipe_livreurs.php        (Gestion livreurs)
+│   │
+│   ├── 💬 COMMUNICATION
+│   │   ├── contact.php                (Messages de contact)
+│   │   └── details_message.php        (Détails des messages)
+│   │
+│   ├── 🔧 OUTILS
+│   │   ├── get_admin.php              (API) Récupération données)
+│   │   ├── sidebar.php                (Barre latérale)
+│   │   ├── admin_style.css            (Styles admin)
+│   │   └── database.sql               (Données admin)
+│   │
+│   └── 📁 /admin/includes/
+│       ├── header.php                 (En-tête admin)
+│       └── sidebar.php                (Sidebar admin)
+│
+│
+├── 📁 /livreur/ (PORTAIL LIVREURS)
+│   ├── index.php                      (Accueil livreur)
+│   ├── login.php                      (Connexion livreur)
+│   ├── envoyer_message.php            (Envoi de messages)
+│   ├── scan.php                       (Interface de scan)
+│   └── valider_scan.php               (Validation scan commande)
+│
+│
+├── 📁 /api/ (API REST)
+│   └── get_produit.php                (API récupération produits)
+│
+│
+├── 📁 /includes/ (COMPOSANTS RÉUTILISABLES)
+│   ├── header.php                     (En-tête page)
+│   ├── footer.php                     (Pied de page)
+│   └── EmailManager.php               (Gestion des emails)
+│
+│
+├── 📁 /css/ (FICHIERS CSS)
+│   ├── style.css                      (Styles principaux)
+│   ├── admin.css                      (Styles admin)
+│   ├── produits.css                   (Styles produkts)
+│   └── panier.css                     (Styles panier)
+│
+│
+├── 📁 /js/ (FICHIERS JAVASCRIPT)
+│   ├── main.js                        (Script principal)
+│   └── produit.js                     (Script produits)
+│
+│
+├── 📁 /images/ (RESSOURCES IMAGES)
+│   ├── placeholder.jpg                (Image par défaut)
+│   └── /produits/                     (Images des produits)
+│       └── (images produits stockées ici)
+│
+│
+├── 📁 /uploads/ (FICHIERS UPLOADÉS)
+│   ├── /marques/                      (Logos/images marques)
+│   └── /produits/                     (Images produits uploadées)
+│
+│
+├── 📁 /vendor/ (DÉPENDANCES COMPOSER)
+│   └── /phpmailer/                    (Librairie d'envoi d'emails)
+│       └── /src/                      (Code source PHPMailer)
+│
+│
+├── 📁 /.git/ (GIT - CONTRÔLE DE VERSION)
+│   └── (historique et branches Git)
+│
+│
+└── 📁 /.vscode/ (CONFIGURATION VS CODE)
+    └── (paramètres spécifiques au projet)
+
+================================================================================
+                            RÉSUMÉ FONCTIONNEL
+================================================================================
+
+PAGES PUBLIQUES (Clients)
+  └── Accueil, Produits, Panier, Commandes, Compte, Contact, Suivi
+
+PAGES D'AUTHENTIFICATION
+  └── Connexion, Inscription, Mot de passe, Google OAuth
+
+PANEL ADMINISTRATEUR
+  └── Dashboard, Produits, Clients, Commandes, Livraisons, Livreurs, Messages
+
+PORTAIL LIVREURS
+  └── Connexion, Scanner, Messages, Validation scan
+
+API & COMPOSANTS
+  └── API produits, Emails, En-têtes, Pieds de page
+
+ASSETS
+  └── CSS, JavaScript, Images, Uploads
+
+================================================================================
+                         TECHNOLOGIES UTILISÉES
+================================================================================
+
+Backend:        PHP
+Base de données: MySQL/MariaDB
+Frontend:       HTML, CSS, JavaScript
+Emailing:       PHPMailer
+Authentification: Google OAuth, Session PHP
+Gestion projets: Composer, Git
+
+================================================================================
