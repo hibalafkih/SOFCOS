@@ -40,6 +40,11 @@ if (!defined('DB_HOST')) define('DB_HOST', 'localhost');
 if (!defined('DB_NAME')) define('DB_NAME', 'sofcos_db');
 if (!defined('DB_USER')) define('DB_USER', 'root');
 if (!defined('DB_PASS')) define('DB_PASS', '');
+if (!defined('SMTP_HOST')) define('SMTP_HOST', '');
+if (!defined('SMTP_PORT')) define('SMTP_PORT', '');
+if (!defined('SMTP_USER')) define('SMTP_USER', '');
+if (!defined('SMTP_PASS')) define('SMTP_PASS', '');
+if (!defined('EMAIL_FROM_NAME')) define('EMAIL_FROM_NAME', 'SOFCOS');
 
 define('GOOGLE_REDIRECT_URI', 'http://localhost/SOFCOS/google_callback.php');
 
