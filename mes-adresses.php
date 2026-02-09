@@ -1,97 +1,40 @@
 <?php
 // mes-adresses.php
-
-// 1. Démarrage de session
-if (session_status() === PHP_SESSION_NONE) { session_start(); }
-
+session_start();
 require_once 'config.php';
 
-// 2. SÉCURITÉ
-if(!isset($_SESSION['client_id'])) {
-    header('Location: connexion.php');
-    exit();
-}
-
+if(!isset($_SESSION['client_id'])) { header('Location: connexion.php'); exit(); }
 $client_id = $_SESSION['client_id'];
-$message = '';
-$msg_type = '';
 
 try {
-    // Connexion DB de secours
     if(!isset($pdo)) {
-        $db_host = defined('DB_HOST') ? DB_HOST : 'localhost';
-        $db_name = defined('DB_NAME') ? DB_NAME : 'sofcos_db';
-        $db_user = defined('DB_USER') ? DB_USER : 'root';
-        $db_pass = defined('DB_PASS') ? DB_PASS : '';
-        $pdo = new PDO("mysql:host=$db_host;dbname=$db_name;charset=utf8mb4", $db_user, $db_pass);
+        $pdo = new PDO("mysql:host=localhost;dbname=sofcos_db;charset=utf8", "root", "");
         $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
     }
+    
+    $message = ''; $msg_type = '';
 
-    // --- TRAITEMENT DU FORMULAIRE (Mise à jour adresse) ---
-    if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_address'])) {
-        $adresse = trim($_POST['adresse']);
-        $ville = trim($_POST['ville']);
-        $code_postal = trim($_POST['code_postal']); // Vérifiez si cette colonne existe dans votre BDD
-        $pays = trim($_POST['pays']);               // Vérifiez si cette colonne existe dans votre BDD
-        $telephone = trim($_POST['telephone']);
-        $infos_sup = trim($_POST['infos_sup']);     // Complément d'adresse
+    if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_adresse'])) {
+        $adresse = htmlspecialchars($_POST['adresse']);
+        $ville = htmlspecialchars($_POST['ville']);
+        $code_postal = htmlspecialchars($_POST['code_postal']); // Si dispo dans BDD
 
-        // Mise à jour
-        // NOTE : Si vous n'avez pas les colonnes code_postal ou pays, retirez-les de cette requête
-        $sql = "UPDATE clients SET adresse = ?, ville = ?, code_postal = ?, pays = ?, telephone = ?, infos_sup = ? WHERE id = ?";
-        
-        // Si les colonnes n'existent pas encore, utilisez cette version simplifiée :
-        // $sql = "UPDATE clients SET adresse = ?, ville = ?, telephone = ? WHERE id = ?";
-        // $params = [$adresse, $ville, $telephone, $client_id];
-
-        $stmtUpdate = $pdo->prepare($sql);
-        
-        try {
-            // Exécution avec tous les champs (Ordre important)
-            $stmtUpdate->execute([$adresse, $ville, $code_postal, $pays, $telephone, $infos_sup, $client_id]);
-            
-            $message = "Votre carnet d'adresses a été mis à jour avec succès.";
+        // Mise à jour (Adaptez si vous avez une table 'adresses' séparée, ici je suppose que c'est dans 'clients')
+        $stmtUp = $pdo->prepare("UPDATE clients SET adresse=?, ville=?, code_postal=? WHERE id=?");
+        if($stmtUp->execute([$adresse, $ville, $code_postal, $client_id])) {
+            $message = "Adresse de livraison mise à jour.";
             $msg_type = "success";
-        } catch (PDOException $e) {
-            $message = "Erreur lors de la mise à jour. Vérifiez que les colonnes (code_postal, pays, etc.) existent bien en base de données.";
+        } else {
+            $message = "Erreur technique.";
             $msg_type = "error";
-            // Pour le debug : echo $e->getMessage();
         }
     }
 
-    // 3. RECUPERATION DONNEES CLIENT
     $stmt = $pdo->prepare("SELECT * FROM clients WHERE id = ?");
     $stmt->execute([$client_id]);
     $client = $stmt->fetch();
 
-    if (!$client) {
-        session_destroy();
-        header('Location: connexion.php');
-        exit();
-    }
-
-    // 4. STATISTIQUES (CALCULS TOUJOURS PRÉCIS)
-    $countAllStmt = $pdo->prepare("SELECT COUNT(*) FROM commandes WHERE client_id = ?");
-    $countAllStmt->execute([$client_id]);
-    $nombreTotalCommandes = $countAllStmt->fetchColumn();
-
-    $sumStmt = $pdo->prepare("SELECT SUM(total) FROM commandes WHERE client_id = ? AND statut != 'Annulé'");
-    $sumStmt->execute([$client_id]);
-    $totalDepense = $sumStmt->fetchColumn() ?: 0;
-
-    $countEnCoursStmt = $pdo->prepare("SELECT COUNT(*) FROM commandes WHERE client_id = ? AND statut NOT IN ('Livré', 'Annulé')");
-    $countEnCoursStmt->execute([$client_id]);
-    $nombreEnCours = $countEnCoursStmt->fetchColumn();
-
-    $stats = [
-        'total_commandes' => $nombreTotalCommandes,
-        'total_depense'   => $totalDepense,
-        'en_cours'        => $nombreEnCours
-    ];
-
-} catch (PDOException $e) {
-    die("Erreur technique : " . $e->getMessage());
-}
+} catch (PDOException $e) { die("Erreur : " . $e->getMessage()); }
 ?>
 
 <!DOCTYPE html>
@@ -99,232 +42,91 @@ try {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mes Adresses - SOFCOS Paris</title>
-    
+    <title>Mes Adresses - SOFCOS</title>
     <link href="https://fonts.googleapis.com/css2?family=Prata&family=Montserrat:wght@300;400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <style>
-        /* --- DESIGN SYSTEM LUXE (Identique) --- */
-        :root {
-            --green-luxe: #1A3C34;
-            --gold-accent: #C5A059;
-            --beige-bg: #fdfbf7;
-            --text-main: #2c2c2c;
-            --white: #ffffff;
-            --border-light: #e0e0e0;
-        }
-
-        body {
-            margin: 0; padding: 0;
-            font-family: 'Montserrat', sans-serif;
-            background-color: var(--beige-bg);
-            color: var(--text-main);
-        }
-
-        .compte-container {
-            max-width: 1200px; margin: 40px auto; padding: 0 20px;
-        }
-
-        /* Header */
-        .compte-header {
-            background-color: var(--green-luxe); color: var(--white);
-            padding: 50px; border-radius: 4px; margin-bottom: 40px;
-            text-align: center; position: relative; overflow: hidden;
-        }
-        .compte-header::after {
-            content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 4px;
-            background: linear-gradient(90deg, #d4af37, #f3e5ab);
-        }
-        .compte-header h1 { font-family: 'Prata', serif; font-size: 38px; margin: 0 0 10px 0; }
-        .compte-header p { font-family: 'Montserrat', sans-serif; font-weight: 300; opacity: 0.9; }
-
-        /* Stats */
-        .stats-row {
-            display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 25px; margin-bottom: 40px;
-        }
-        .stat-box {
-            background: var(--white); padding: 30px;
-            border: 1px solid rgba(0,0,0,0.05); text-align: center;
-            transition: transform 0.3s ease;
-        }
-        .stat-box:hover {
-            transform: translateY(-5px); box-shadow: 0 10px 30px rgba(0,0,0,0.05);
-            border-bottom: 3px solid var(--gold-accent);
-        }
-        .stat-box i { font-size: 32px; color: var(--gold-accent); margin-bottom: 15px; }
-        .stat-box h3 { font-family: 'Prata', serif; font-size: 32px; margin: 5px 0; color: var(--green-luxe); }
-        .stat-box p { font-size: 12px; text-transform: uppercase; letter-spacing: 1px; color: #888; }
-
-        /* Layout */
-        .compte-grid { display: grid; grid-template-columns: 280px 1fr; gap: 40px; }
+        /* DESIGN SYSTEM LUXE */
+        :root { --primary: #1A3C34; --gold: #C5A059; --bg-light: #F9F7F2; --white: #ffffff; --text: #2c2c2c; --shadow: 0 10px 30px rgba(26, 60, 52, 0.08); }
+        body { font-family: 'Montserrat', sans-serif; background-color: var(--bg-light); color: var(--text); margin: 0; }
+        .dashboard-container { max-width: 1200px; margin: 40px auto; padding: 0 20px; display: grid; grid-template-columns: 280px 1fr; gap: 40px; }
         
-        /* Sidebar */
-        .compte-sidebar { background: var(--white); padding: 30px; height: fit-content; border: 1px solid rgba(0,0,0,0.05); }
-        .sidebar-title {
-            font-family: 'Prata', serif; font-size: 18px; margin-bottom: 25px; padding-bottom: 15px;
-            border-bottom: 1px solid var(--border-light); color: var(--green-luxe);
-        }
-        .compte-menu { list-style: none; padding: 0; margin: 0; }
-        .compte-menu li { margin-bottom: 8px; }
-        .compte-menu a {
-            display: flex; align-items: center; gap: 15px;
-            padding: 14px 20px; color: var(--text-main);
-            text-decoration: none; font-size: 13px; font-weight: 500;
-            transition: all 0.3s; border-left: 3px solid transparent;
-        }
-        .compte-menu a:hover, .compte-menu a.active {
-            background: #fcfcfc; color: var(--green-luxe); border-left: 3px solid var(--gold-accent);
-        }
-        .compte-menu a.logout { color: #d63031; }
-        .compte-menu a.logout:hover { background: #fff5f5; border-color: #d63031; }
+        /* SIDEBAR IDENTIQUE */
+        .sidebar { background: var(--white); border-radius: 8px; box-shadow: var(--shadow); padding: 30px 0; height: fit-content; }
+        .user-profile-summary { text-align: center; padding-bottom: 20px; border-bottom: 1px solid #e5e5e5; margin-bottom: 10px; }
+        .avatar-circle { width: 80px; height: 80px; border-radius: 50%; border: 2px solid var(--gold); color: var(--gold); display: flex; align-items: center; justify-content: center; font-size: 30px; margin: 0 auto 15px; }
+        .user-name { font-family: 'Prata', serif; font-size: 18px; color: var(--primary); }
+        .menu-list { list-style: none; padding: 0; margin: 0; }
+        .menu-link { display: flex; align-items: center; gap: 15px; padding: 16px 30px; text-decoration: none; color: #666; font-weight: 500; font-size: 14px; transition: all 0.3s; border-left: 4px solid transparent; }
+        .menu-link:hover, .menu-link.active { background: linear-gradient(90deg, rgba(197,160,89,0.1) 0%, rgba(255,255,255,0) 100%); color: var(--primary); border-left-color: var(--gold); }
+        .menu-link.logout { color: #d63031; margin-top: 20px; border-top: 1px solid #e5e5e5; }
 
-        /* Content & Form */
-        .compte-content { background: var(--white); padding: 40px; border: 1px solid rgba(0,0,0,0.05); }
-        .section-title {
-            font-family: 'Prata', serif; font-size: 26px; margin-bottom: 30px; padding-bottom: 15px;
-            border-bottom: 1px solid var(--border-light); color: var(--green-luxe);
-        }
+        /* FORM */
+        .section-box { background: var(--white); padding: 40px; border-radius: 8px; box-shadow: var(--shadow); }
+        .section-title { font-family: 'Prata', serif; font-size: 24px; color: var(--primary); border-bottom: 1px solid #e5e5e5; padding-bottom: 15px; margin-bottom: 30px; }
+        .form-group { margin-bottom: 25px; }
+        .form-group label { display: block; margin-bottom: 8px; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; color: #666; font-weight: 600; }
+        .form-control { width: 100%; padding: 12px 15px; border: 1px solid #e0e0e0; border-radius: 4px; font-family: 'Montserrat', sans-serif; transition: 0.3s; box-sizing: border-box; }
+        .form-control:focus { border-color: var(--gold); outline: none; box-shadow: 0 0 0 3px rgba(197, 160, 89, 0.1); }
+        .btn-submit { background: var(--primary); color: white; border: none; padding: 15px 40px; text-transform: uppercase; letter-spacing: 1px; font-weight: 600; font-size: 13px; cursor: pointer; transition: 0.3s; border-radius: 4px; }
+        .btn-submit:hover { background: var(--gold); }
+        .alert { padding: 15px; margin-bottom: 25px; border-radius: 4px; font-size: 14px; }
+        .alert-success { background: #E8F5E9; color: #2E7D32; border: 1px solid #A5D6A7; }
+        .alert-error { background: #FFEBEE; color: #C62828; border: 1px solid #EF9A9A; }
 
-        /* Form Styles */
-        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; }
-        .form-group { margin-bottom: 20px; }
-        .form-group label {
-            display: block; margin-bottom: 8px; font-size: 12px; text-transform: uppercase;
-            letter-spacing: 1px; color: #666; font-weight: 600;
-        }
-        .form-control {
-            width: 100%; padding: 12px 15px; border: 1px solid var(--border-light);
-            font-family: 'Montserrat', sans-serif; font-size: 14px; box-sizing: border-box;
-            transition: 0.3s; background: #fdfdfd;
-        }
-        .form-control:focus {
-            border-color: var(--gold-accent); outline: none; background: #fff;
-            box-shadow: 0 0 0 3px rgba(197, 160, 89, 0.1);
-        }
-        textarea.form-control { resize: vertical; min-height: 100px; }
-        
-        .btn-submit {
-            background-color: var(--green-luxe); color: white; border: none;
-            padding: 15px 40px; font-family: 'Montserrat', sans-serif;
-            text-transform: uppercase; letter-spacing: 1px; font-weight: 600; font-size: 12px;
-            cursor: pointer; transition: 0.3s; margin-top: 10px;
-        }
-        .btn-submit:hover { background-color: var(--gold-accent); }
-
-        /* Alerts */
-        .alert { padding: 15px; margin-bottom: 25px; font-size: 14px; border-left: 4px solid; }
-        .alert-success { background: #e8f5e9; color: #1b5e20; border-color: #2ecc71; }
-        .alert-error { background: #ffebee; color: #b71c1c; border-color: #e74c3c; }
-
-        @media (max-width: 900px) {
-            .compte-grid { grid-template-columns: 1fr; }
-            .form-row { grid-template-columns: 1fr; }
-        }
+        @media (max-width: 900px) { .dashboard-container { grid-template-columns: 1fr; } }
     </style>
 </head>
 <body>
-
     <?php include 'includes/header.php'; ?>
-    
-    <div class="compte-container">
-        
-        <div class="compte-header">
-            <h1>Mon Carnet d'Adresses</h1>
-            <p>Gérez vos coordonnées de livraison et facturation</p>
+
+    <div class="dashboard-container">
+        <div class="sidebar">
+            <div class="user-profile-summary">
+                <div class="avatar-circle"><?= strtoupper(substr($client['prenom'], 0, 1)) ?></div>
+                <div class="user-name"><?= htmlspecialchars($client['prenom']) ?></div>
+            </div>
+            <ul class="menu-list">
+                <li><a href="mon-compte.php" class="menu-link"><i class="fas fa-th-large"></i> Tableau de bord</a></li>
+                <li><a href="mes-commandes.php" class="menu-link"><i class="fas fa-box"></i> Mes commandes</a></li>
+                <li><a href="mes-informations.php" class="menu-link"><i class="fas fa-user-edit"></i> Profil</a></li>
+                <li><a href="mes-adresses.php" class="menu-link active"><i class="fas fa-map-marker-alt"></i> Adresses</a></li>
+                <li><a href="changer-mot-de-passe.php" class="menu-link"><i class="fas fa-lock"></i> Sécurité</a></li>
+                <li><a href="deconnexion.php" class="menu-link logout"><i class="fas fa-sign-out-alt"></i> Déconnexion</a></li>
+            </ul>
         </div>
-        
-        <div class="stats-row">
-            <div class="stat-box">
-                <i class="fas fa-shopping-bag"></i>
-                <h3><?= $stats['total_commandes'] ?></h3>
-                <p>Commandes passées</p>
-            </div>
-            
-            <div class="stat-box">
-                <i class="fas fa-euro-sign"></i> 
-                <h3><?= number_format($stats['total_depense'], 2, ',', ' ') ?> DH</h3>
-                <p>Total Achats</p>
-            </div>
-            
-            <div class="stat-box">
-                <i class="fas fa-truck-loading"></i>
-                <h3><?= $stats['en_cours'] ?></h3>
-                <p>En cours de livraison</p>
-            </div>
-        </div>
-        
-        <div class="compte-grid">
-            
-            <div class="compte-sidebar">
-                <div class="sidebar-title">Mon Menu</div>
-                <ul class="compte-menu">
-                    <li><a href="mon-compte.php"><i class="fas fa-home"></i> Tableau de bord</a></li>
-                    <li><a href="mes-commandes.php"><i class="fas fa-box-open"></i> Mes commandes</a></li>
-                    <li><a href="mes-informations.php"><i class="far fa-user"></i> Mes informations</a></li>
-                    <li><a href="mes-adresses.php" class="active"><i class="fas fa-map-marker-alt"></i> Carnet d'adresses</a></li>
-                    <li><a href="changer-mot-de-passe.php"><i class="fas fa-lock"></i> Sécurité</a></li>
-                    <li style="margin-top: 15px; border-top: 1px solid #eee; padding-top: 15px;">
-                        <a href="deconnexion.php" class="logout"><i class="fas fa-sign-out-alt"></i> Déconnexion</a>
-                    </li>
-                </ul>
-            </div>
-            
-            <div class="compte-content">
-                <h2 class="section-title">Adresse de livraison par défaut</h2>
+
+        <div class="main-content">
+            <div class="section-box">
+                <h2 class="section-title">Mon carnet d'adresses</h2>
                 
                 <?php if($message): ?>
-                    <div class="alert alert-<?= $msg_type ?>">
-                        <?= $message ?>
-                    </div>
+                    <div class="alert alert-<?= $msg_type ?>"><?= $message ?></div>
                 <?php endif; ?>
 
-                <form action="mes-adresses.php" method="POST">
-                    
+                <form method="POST">
                     <div class="form-group">
-                        <label for="adresse">Rue / Adresse principale</label>
-                        <textarea id="adresse" name="adresse" class="form-control" required placeholder="N° Rue, Bâtiment, Résidence..."><?= htmlspecialchars($client['adresse'] ?? '') ?></textarea>
+                        <label>Adresse complète</label>
+                        <input type="text" name="adresse" class="form-control" placeholder="Numéro, Rue, Appartement..." value="<?= htmlspecialchars($client['adresse']) ?>" required>
                     </div>
 
-                    <div class="form-group">
-                        <label for="infos_sup">Complément d'adresse (Optionnel)</label>
-                        <input type="text" id="infos_sup" name="infos_sup" class="form-control" 
-                               value="<?= htmlspecialchars($client['infos_sup'] ?? '') ?>" placeholder="Étage, Digicode, Instructions...">
-                    </div>
-
-                    <div class="form-row">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px;">
                         <div class="form-group">
-                            <label for="code_postal">Code Postal</label>
-                            <input type="text" id="code_postal" name="code_postal" class="form-control" 
-                                   value="<?= htmlspecialchars($client['code_postal'] ?? '') ?>" placeholder="ex: 75000">
+                            <label>Ville</label>
+                            <input type="text" name="ville" class="form-control" value="<?= htmlspecialchars($client['ville']) ?>" required>
                         </div>
                         <div class="form-group">
-                            <label for="ville">Ville</label>
-                            <input type="text" id="ville" name="ville" class="form-control" 
-                                   value="<?= htmlspecialchars($client['ville'] ?? '') ?>" required>
+                            <label>Code Postal</label>
+                            <input type="text" name="code_postal" class="form-control" value="<?= htmlspecialchars($client['code_postal'] ?? '') ?>">
                         </div>
                     </div>
 
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="pays">Pays</label>
-                            <input type="text" id="pays" name="pays" class="form-control" 
-                                   value="<?= htmlspecialchars($client['pays'] ?? 'Maroc') ?>">
-                        </div>
-                        <div class="form-group">
-                            <label for="telephone">Téléphone (pour la livraison)</label>
-                            <input type="text" id="telephone" name="telephone" class="form-control" 
-                                   value="<?= htmlspecialchars($client['telephone'] ?? '') ?>" required>
-                        </div>
-                    </div>
-                    
-                    <div class="form-group" style="margin-top:20px;">
-                        <button type="submit" name="update_address" class="btn-submit">
-                            <i class="far fa-save"></i> Mettre à jour mon adresse
+                    <div style="margin-top: 20px;">
+                        <button type="submit" name="update_adresse" class="btn-submit">
+                            Mettre à jour mon adresse
                         </button>
                     </div>
-
                 </form>
             </div>
         </div>

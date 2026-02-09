@@ -1,21 +1,10 @@
 <?php
 // suivi.php
-
-// 1. Session et Config
-if (session_status() === PHP_SESSION_NONE) { session_start(); }
+session_start();
 require_once 'config.php';
 
-// 2. SÉCURITÉ
-if(!isset($_SESSION['client_id'])) {
-    header('Location: connexion.php');
-    exit();
-}
-
-// 3. VÉRIFICATION ID COMMANDE
-if (!isset($_GET['id']) || empty($_GET['id'])) {
-    header('Location: mon-compte.php');
-    exit();
-}
+if(!isset($_SESSION['client_id'])) { header('Location: connexion.php'); exit(); }
+if (!isset($_GET['id']) || empty($_GET['id'])) { header('Location: mon-compte.php'); exit(); }
 
 $commande_id = (int)$_GET['id'];
 $client_id = $_SESSION['client_id'];
@@ -26,29 +15,17 @@ try {
         $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
     }
 
-    // 4. RÉCUPÉRER LA COMMANDE
     $stmt = $pdo->prepare("SELECT * FROM commandes WHERE id = ? AND client_id = ?");
     $stmt->execute([$commande_id, $client_id]);
     $commande = $stmt->fetch();
 
-    if (!$commande) {
-        header('Location: mon-compte.php');
-        exit();
-    }
+    if (!$commande) { header('Location: mon-compte.php'); exit(); }
 
-    // 5. RÉCUPÉRER LES DÉTAILS
-    // Note : On utilise bien 'commandes_details'
-    $sqlDetails = "SELECT d.*, p.nom, p.image 
-                   FROM commandes_details d 
-                   LEFT JOIN produits p ON d.produit_id = p.id 
-                   WHERE d.commande_id = ?";
-    $stmtDetails = $pdo->prepare($sqlDetails);
+    $stmtDetails = $pdo->prepare("SELECT d.*, p.nom, p.image FROM commandes_details d LEFT JOIN produits p ON d.produit_id = p.id WHERE d.commande_id = ?");
     $stmtDetails->execute([$commande_id]);
     $details = $stmtDetails->fetchAll();
 
-} catch (PDOException $e) {
-    die("Erreur technique : " . $e->getMessage());
-}
+} catch (PDOException $e) { die("Erreur : " . $e->getMessage()); }
 ?>
 
 <!DOCTYPE html>
@@ -56,250 +33,224 @@ try {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Suivi de Commande #<?= $commande_id ?> - SOFCOS</title>
-    
+    <title>Suivi #<?= $commande_id ?> - SOFCOS</title>
     <link href="https://fonts.googleapis.com/css2?family=Prata&family=Montserrat:wght@300;400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <style>
-        /* --- DESIGN SYSTEM LUXE --- */
         :root {
-            --green-luxe: #1A3C34;
-            --gold-accent: #C5A059;
-            --beige-bg: #fdfbf7;
-            --text-main: #2c2c2c;
-            --white: #ffffff;
-            --border-light: #e0e0e0;
+            --primary: #1A3C34; --gold: #C5A059; --bg-light: #F9F7F2;
+            --white: #ffffff; --text: #2c2c2c; --shadow: 0 10px 30px rgba(26, 60, 52, 0.08);
         }
-
-        body {
-            margin: 0; padding: 0;
-            font-family: 'Montserrat', sans-serif;
-            background-color: var(--beige-bg);
-            color: var(--text-main);
-        }
-
-        .details-container { max-width: 1000px; margin: 40px auto; padding: 0 20px; }
-
-        /* Header */
-        .page-header {
-            display: flex; justify-content: space-between; align-items: center;
-            margin-bottom: 30px; padding-bottom: 20px; border-bottom: 1px solid var(--gold-accent);
-        }
-        .page-header h1 { font-family: 'Prata', serif; font-size: 28px; margin: 0; color: var(--green-luxe); }
-        .btn-back {
-            text-decoration: none; color: var(--text-main); font-size: 14px;
-            display: flex; align-items: center; gap: 8px; transition: 0.3s;
-        }
-        .btn-back:hover { color: var(--gold-accent); }
-
-        /* --- BARRE DE PROGRESSION (TRACKING) --- */
-        .track-container { margin-bottom: 50px; padding: 20px 0; }
+        body { font-family: 'Montserrat', sans-serif; background: var(--bg-light); color: var(--text); margin: 0; }
         
-        .progression-bar {
-            display: flex; justify-content: space-between; position: relative; margin-top: 20px;
-        }
-        .progression-bar::before {
-            content: ''; position: absolute; top: 15px; left: 0; width: 100%; height: 2px;
-            background: #e0e0e0; z-index: 0;
-        }
+        .track-wrapper { max-width: 1000px; margin: 50px auto; padding: 0 20px; }
         
-        .step {
-            position: relative; z-index: 1; text-align: center; width: 25%;
-        }
-        
-        /* Cercle de l'étape */
-        .step-circle {
-            width: 30px; height: 30px; background: #fff; border: 2px solid #e0e0e0;
-            border-radius: 50%; margin: 0 auto 10px auto; display: flex;
-            align-items: center; justify-content: center; transition: 0.4s;
-        }
-        .step-circle i { color: #ccc; font-size: 14px; }
-        
-        /* Texte de l'étape */
-        .step-label {
-            font-size: 12px; color: #999; text-transform: uppercase; letter-spacing: 1px; font-weight: 500;
-        }
+        /* HEADER */
+        .track-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 40px; }
+        .track-header h1 { font-family: 'Prata', serif; font-size: 32px; color: var(--primary); margin: 0; }
+        .btn-back { display: inline-flex; align-items: center; gap: 10px; padding: 10px 20px; background: white; color: var(--primary); text-decoration: none; border-radius: 30px; font-weight: 600; font-size: 13px; box-shadow: 0 5px 15px rgba(0,0,0,0.05); transition: 0.3s; }
+        .btn-back:hover { background: var(--primary); color: white; transform: translateX(-5px); }
 
-        /* ÉTAPE ACTIVE (Verte/Or) */
-        .step.active .step-circle {
-            background: var(--green-luxe); border-color: var(--green-luxe);
-            box-shadow: 0 0 0 4px rgba(26, 60, 52, 0.1);
-        }
-        .step.active .step-circle i { color: #fff; }
-        .step.active .step-label { color: var(--green-luxe); font-weight: 700; }
-        
-        /* Ligne de progression colorée */
-        .progress-line-active {
-            position: absolute; top: 15px; left: 0; height: 2px; background: var(--green-luxe);
-            z-index: 0; transition: width 0.4s ease;
-        }
+        /* TRACKER */
+        .timeline-card { background: white; padding: 40px 20px; border-radius: 12px; box-shadow: var(--shadow); margin-bottom: 30px; }
+        .progress-track { position: relative; display: flex; justify-content: space-between; margin-top: 20px; }
+        .progress-track::before { content: ''; position: absolute; top: 15px; left: 0; width: 100%; height: 3px; background: #eee; z-index: 0; border-radius: 10px; }
+        .progress-bar-fill { position: absolute; top: 15px; left: 0; height: 3px; background: var(--gold); z-index: 0; transition: width 1s ease; box-shadow: 0 0 10px rgba(197, 160, 89, 0.5); }
+        .step { position: relative; z-index: 1; text-align: center; width: 25%; }
+        .step-icon { width: 35px; height: 35px; background: white; border: 2px solid #ddd; border-radius: 50%; margin: 0 auto 10px; display: flex; align-items: center; justify-content: center; font-size: 14px; color: #ccc; transition: 0.4s; }
+        .step-text { font-size: 11px; text-transform: uppercase; color: #999; font-weight: 600; letter-spacing: 1px; }
+        .step.active .step-icon { border-color: var(--gold); background: var(--primary); color: var(--gold); transform: scale(1.2); box-shadow: 0 0 0 5px rgba(197, 160, 89, 0.2); }
+        .step.active .step-text { color: var(--primary); }
 
-        /* --- RESTE DU DESIGN --- */
-        .details-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 30px; }
-        .info-box { background: var(--white); padding: 30px; border: 1px solid rgba(0,0,0,0.05); margin-bottom: 20px; }
-        .box-title {
-            font-family: 'Prata', serif; font-size: 18px; margin-bottom: 20px;
-            color: var(--green-luxe); border-bottom: 1px solid #eee; padding-bottom: 10px;
-        }
-        .products-table { width: 100%; border-collapse: collapse; }
-        .products-table td { padding: 15px 0; border-bottom: 1px solid #eee; font-size: 14px; }
-        .product-info { display: flex; align-items: center; gap: 15px; }
-        .product-img { width: 60px; height: 60px; object-fit: cover; background: #f9f9f9; }
-        .totals-row { display: flex; justify-content: space-between; margin-top: 10px; font-size: 14px; }
-        .totals-row.final {
-            margin-top: 20px; padding-top: 15px; border-top: 2px solid var(--gold-accent);
-            font-size: 18px; font-weight: 600; color: var(--green-luxe);
-        }
-        
-        /* Alerte Annulée */
-        .alert-annule {
-            background: #f8d7da; color: #721c24; padding: 15px; text-align: center;
-            border-radius: 4px; border: 1px solid #f5c6cb; margin-bottom: 20px;
-        }
+        /* LAYOUT GRID */
+        .content-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 30px; }
+        .info-card { background: white; padding: 30px; border-radius: 12px; box-shadow: var(--shadow); height: fit-content; }
+        .card-title { font-family: 'Prata', serif; font-size: 18px; color: var(--primary); border-bottom: 1px solid #f0f0f0; padding-bottom: 15px; margin-bottom: 20px; }
 
-        @media (max-width: 800px) {
-            .details-grid { grid-template-columns: 1fr; }
-            .step-label { font-size: 9px; }
-        }
+        /* --- NOUVEAU DESIGN CONTENU DU COLIS --- */
+        .products-card { background: var(--white); border-radius: 12px; box-shadow: var(--shadow); overflow: hidden; }
+        .products-header { background: #fdfbf7; padding: 20px 30px; border-bottom: 1px solid #eee; display: flex; align-items: center; gap: 10px; }
+        .products-header h3 { margin: 0; font-family: 'Prata', serif; font-size: 18px; color: var(--primary); }
+        .products-header i { color: var(--gold); }
+        
+        .product-list { padding: 0 30px; }
+        .product-item { display: flex; align-items: center; justify-content: space-between; padding: 25px 0; border-bottom: 1px dashed #eee; }
+        .product-item:last-child { border-bottom: none; }
+        
+        .prod-main { display: flex; align-items: center; gap: 20px; }
+        .prod-img-container { position: relative; width: 70px; height: 70px; border-radius: 8px; overflow: hidden; border: 1px solid #f0f0f0; box-shadow: 0 2px 5px rgba(0,0,0,0.03); }
+        .prod-img { width: 100%; height: 100%; object-fit: cover; }
+        .qty-badge { position: absolute; top: 0; left: 0; background: var(--primary); color: white; font-size: 10px; font-weight: 700; padding: 2px 6px; border-bottom-right-radius: 6px; }
+        
+        .prod-details h4 { margin: 0 0 5px 0; font-size: 15px; font-weight: 600; color: var(--text); }
+        .prod-meta { font-size: 13px; color: #888; display: flex; align-items: center; gap: 10px; }
+        .prod-unit-price { background: #f5f5f5; padding: 2px 8px; border-radius: 4px; font-size: 11px; }
+        .prod-total-price { font-family: 'Montserrat', sans-serif; font-weight: 700; font-size: 16px; color: var(--primary); white-space: nowrap; }
+
+        /* RÉSUMÉ FINANCIER INTÉGRÉ */
+        .summary-section { background: #fafafa; padding: 25px 30px; border-top: 1px solid #eee; }
+        .summary-row { display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 14px; color: #666; }
+        .summary-row.total { margin-top: 15px; padding-top: 15px; border-top: 1px solid #ddd; color: var(--primary); font-size: 18px; font-weight: 700; font-family: 'Prata', serif; }
+
+        @media (max-width: 800px) { .content-grid { grid-template-columns: 1fr; } .step-text { display: none; } }
+        @media (max-width: 600px) { .product-item { flex-direction: column; align-items: flex-start; gap: 15px; } .prod-total-price { align-self: flex-end; } .product-list { padding: 0 20px; } }
     </style>
 </head>
 <body>
 
-    <?php include 'includes/header.php'; ?>
+<?php include 'includes/header.php'; ?>
+
+<div class="track-wrapper">
     
-    <div class="details-container">
-        
-        <div class="page-header">
-            <h1>Suivi Commande #<?= $commande_id ?></h1>
-            <a href="mon-compte.php" class="btn-back">
-                <i class="fas fa-arrow-left"></i> Retour
-            </a>
-        </div>
-
-        <?php 
-            // LOGIQUE DE SUIVI (Stepper)
-            $st = strtolower(trim($commande['statut'])); // Nettoyage statut
-            
-            // Calcul du % de la barre verte
-            $progressWidth = '0%';
-            $step1 = $step2 = $step3 = $step4 = '';
-
-            // Si Annulé
-            if ($st == 'annule') {
-                echo '<div class="alert-annule"><i class="fas fa-times-circle"></i> Cette commande a été annulée.</div>';
-            } else {
-                // Logique des étapes (Cumulative)
-                // Étape 1 : Validée (Dès que la commande existe et n'est pas annulée)
-                $step1 = 'active';
-                $progressWidth = '15%'; 
-
-                // Étape 2 : En préparation (Si confirmé, expedié ou livré)
-                if (strpos($st, 'confirm') !== false || strpos($st, 'expedi') !== false || strpos($st, 'livre') !== false) {
-                    $step2 = 'active';
-                    $progressWidth = '50%';
-                }
-
-                // Étape 3 : Expédiée / En route (Si expedié ou livré)
-                if (strpos($st, 'expedi') !== false || strpos($st, 'livre') !== false) {
-                    $step3 = 'active';
-                    $progressWidth = '85%';
-                }
-
-                // Étape 4 : Livrée
-                if (strpos($st, 'livre') !== false) {
-                    $step4 = 'active';
-                    $progressWidth = '100%';
-                }
-        ?>
-
-        <div class="track-container">
-            <div class="progression-bar">
-                <div class="progress-line-active" style="width: <?= $progressWidth ?>;"></div>
-
-                <div class="step <?= $step1 ?>">
-                    <div class="step-circle"><i class="fas fa-check"></i></div>
-                    <div class="step-label">Validée</div>
-                </div>
-
-                <div class="step <?= $step2 ?>">
-                    <div class="step-circle"><i class="fas fa-box-open"></i></div>
-                    <div class="step-label">Préparation</div>
-                </div>
-
-                <div class="step <?= $step3 ?>">
-                    <div class="step-circle"><i class="fas fa-truck"></i></div>
-                    <div class="step-label">En route</div>
-                </div>
-
-                <div class="step <?= $step4 ?>">
-                    <div class="step-circle"><i class="fas fa-home"></i></div>
-                    <div class="step-label">Livrée</div>
-                </div>
-            </div>
-        </div>
-        <?php } // Fin du else (si pas annulé) ?>
-
-        <div class="details-grid">
-            
-            <div class="col-products">
-                <div class="info-box">
-                    <h3 class="box-title">Articles</h3>
-                    <table class="products-table">
-                        <?php foreach($details as $item): ?>
-                            <tr>
-                                <td>
-                                    <div class="product-info">
-                                        <?php  $img = !empty($p['image']) ? 'uploads/produits/' . $p['image'] : 'images/default.jpg';?>
-                                         
-                                        <img src="<?= htmlspecialchars($img) ?>" class="product-img">
-                                        <div>
-                                            <strong><?= htmlspecialchars($item['nom']) ?></strong>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td align="right">x<?= $item['quantite'] ?></td>
-                                <td align="right"><?= number_format($item['prix_unitaire'] * $item['quantite'], 2) ?> DH</td>
-                            </tr>
-                        <?php endforeach; ?>
-                    </table>
-                </div>
-            </div>
-
-            <div class="col-infos">
-                <div class="info-box">
-                    <h3 class="box-title">Livraison</h3>
-                    <div style="font-size:14px; line-height:1.6;">
-                        <strong><?= htmlspecialchars($commande['nom_client']) ?></strong><br>
-                        <?= htmlspecialchars($commande['adresse']) ?><br>
-                        <?= htmlspecialchars($commande['ville']) ?><br>
-                        Tél : <?= htmlspecialchars($commande['telephone']) ?>
-                    </div>
-                </div>
-
-                <div class="info-box">
-                    <h3 class="box-title">Total</h3>
-                    <?php 
-                         $subTotal = 0;
-                         foreach($details as $d) { $subTotal += $d['prix_unitaire'] * $d['quantite']; }
-                         $livraison = ($commande['total'] - $subTotal);
-                         if($livraison < 0) $livraison = 0;
-                    ?>
-                    <div class="totals-row">
-                        <span>Sous-total</span> <span><?= number_format($subTotal, 2) ?> DH</span>
-                    </div>
-                    <div class="totals-row">
-                        <span>Livraison</span> <span><?= ($livraison==0)?'Offerte':number_format($livraison,2).' DH' ?></span>
-                    </div>
-                    <div class="totals-row final">
-                        <span>Total</span> <span><?= number_format($commande['total'], 2) ?> DH</span>
-                    </div>
-                </div>
-            </div>
-
-        </div>
+    <div class="track-header">
+        <h1>Commande #<?= $commande_id ?></h1>
+        <a href="mon-compte.php" class="btn-back"><i class="fas fa-arrow-left"></i> Retour</a>
     </div>
-    
-    <?php include 'includes/footer.php'; ?>
+
+    <?php 
+        $st = strtolower(trim($commande['statut']));
+        $width = '10%'; $s1=$s2=$s3=$s4='';
+        
+        if(strpos($st, 'annul') !== false) {
+            // Annulé
+        } else {
+            $s1 = 'active'; $width = '15%';
+            if(strpos($st, 'confirm')!==false || strpos($st, 'expedi')!==false || strpos($st, 'livre')!==false){ $s2 = 'active'; $width = '50%'; }
+            if(strpos($st, 'expedi')!==false || strpos($st, 'livre')!==false){ $s3 = 'active'; $width = '80%'; }
+            if(strpos($st, 'livre')!==false){ $s4 = 'active'; $width = '100%'; }
+        }
+    ?>
+
+    <?php if(strpos($st, 'annul') !== false): ?>
+        <div style="background:#ffebee; color:#c62828; padding:20px; border-radius:8px; text-align:center; margin-bottom:30px; border:1px solid #ef9a9a;">
+            <i class="fas fa-times-circle" style="font-size:20px; margin-bottom:10px; display:block;"></i> 
+            <strong>Commande Annulée</strong><br>
+            Cette commande a été annulée. Si vous avez des questions, contactez le service client.
+        </div>
+    <?php else: ?>
+        <div class="timeline-card">
+            <div class="progress-track">
+                <div class="progress-bar-fill" style="width: <?= $width ?>"></div>
+                <div class="step <?= $s1 ?>">
+                    <div class="step-icon"><i class="fas fa-check"></i></div>
+                    <div class="step-text">Reçue</div>
+                </div>
+                <div class="step <?= $s2 ?>">
+                    <div class="step-icon"><i class="fas fa-box-open"></i></div>
+                    <div class="step-text">Préparation</div>
+                </div>
+                <div class="step <?= $s3 ?>">
+                    <div class="step-icon"><i class="fas fa-shipping-fast"></i></div>
+                    <div class="step-text">En route</div>
+                </div>
+                <div class="step <?= $s4 ?>">
+                    <div class="step-icon"><i class="fas fa-home"></i></div>
+                    <div class="step-text">Livrée</div>
+                </div>
+            </div>
+        </div>
+    <?php endif; ?>
+
+    <div class="content-grid">
+        
+        <div class="products-card">
+            <div class="products-header">
+                <i class="fas fa-shopping-bag"></i>
+                <h3>Contenu de votre colis</h3>
+            </div>
+
+            <div class="product-list">
+                <?php 
+                    $subTotal = 0;
+                    foreach($details as $d): 
+                        $total_ligne = $d['prix_unitaire'] * $d['quantite'];
+                        $subTotal += $total_ligne;
+                        
+                        // Gestion Image Robuste
+                        $img = 'assets/img/default.jpg';
+                        if(!empty($d['image'])){
+                            if(file_exists('admin/'.$d['image'])) $img = 'admin/'.$d['image'];
+                            elseif(file_exists('admin/uploads/produits/'.$d['image'])) $img = 'admin/uploads/produits/'.$d['image'];
+                            elseif(file_exists('uploads/produits/'.$d['image'])) $img = 'uploads/produits/'.$d['image'];
+                            elseif(file_exists($d['image'])) $img = $d['image'];
+                        }
+                ?>
+                <div class="product-item">
+                    <div class="prod-main">
+                        <div class="prod-img-container">
+                            <img src="<?= htmlspecialchars($img) ?>" class="prod-img" alt="Produit">
+                            <div class="qty-badge">x<?= $d['quantite'] ?></div>
+                        </div>
+                        <div class="prod-details">
+                            <h4><?= htmlspecialchars($d['nom']) ?></h4>
+                            <div class="prod-meta">
+                                <span>Prix unitaire :</span>
+                                <span class="prod-unit-price"><?= number_format($d['prix_unitaire'], 2) ?> DH</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="prod-total-price">
+                        <?= number_format($total_ligne, 2) ?> DH
+                    </div>
+                </div>
+                <?php endforeach; ?>
+            </div>
+
+            <div class="summary-section">
+                <?php 
+                    $livraison = ($commande['total'] - $subTotal);
+                    if($livraison < 1) $livraison = 0; 
+                ?>
+                
+                <div class="summary-row">
+                    <span>Sous-total articles</span>
+                    <span><?= number_format($subTotal, 2) ?> DH</span>
+                </div>
+                
+                <div class="summary-row">
+                    <span>Frais de port</span>
+                    <?php if($livraison == 0): ?>
+                        <span style="color:#27ae60; font-weight:600;">Offerts</span>
+                    <?php else: ?>
+                        <span><?= number_format($livraison, 2) ?> DH</span>
+                    <?php endif; ?>
+                </div>
+
+                <div class="summary-row total">
+                    <span>Total Payé</span>
+                    <span><?= number_format($commande['total'], 2) ?> DH</span>
+                </div>
+                
+                <div style="text-align:right; font-size:11px; color:#999; margin-top:5px;">
+                    <i class="fas fa-money-bill-wave"></i> Paiement à la livraison
+                </div>
+            </div>
+        </div>
+
+        <div class="info-card">
+            <h3 class="card-title">Adresse de livraison</h3>
+            <div style="font-size:14px; line-height:1.8;">
+                <strong style="color:var(--primary); display:block; margin-bottom:5px; font-size:16px;">
+                    <?= htmlspecialchars($commande['nom_client']) ?>
+                </strong>
+                <i class="fas fa-map-marker-alt" style="color:var(--gold); margin-right:5px;"></i>
+                <?= htmlspecialchars($commande['adresse']) ?><br>
+                <span style="margin-left:20px;"><?= htmlspecialchars($commande['ville']) ?></span>
+                
+                <div style="margin-top:15px; padding-top:15px; border-top:1px dashed #eee;">
+                    <i class="fas fa-phone" style="color:var(--gold); margin-right:5px;"></i>
+                    <?= htmlspecialchars($commande['telephone']) ?><br>
+                    
+                    <i class="fas fa-envelope" style="color:var(--gold); margin-right:5px;"></i>
+                    <?= htmlspecialchars($commande['email_client']) ?>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<?php include 'includes/footer.php'; ?>
 </body>
 </html>

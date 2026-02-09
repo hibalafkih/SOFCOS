@@ -3,66 +3,43 @@
 session_start();
 require_once 'config.php';
 
-// 1. SÉCURITÉ
+// SÉCURITÉ
 if(!isset($_SESSION['client_id'])) {
     header('Location: connexion.php');
     exit();
 }
-
 $client_id = $_SESSION['client_id'];
 
 try {
-    // Connexion DB si nécessaire
     if(!isset($pdo)) {
         $pdo = new PDO("mysql:host=localhost;dbname=sofcos_db;charset=utf8", "root", "");
         $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
     }
 
-    // 2. RÉCUPÉRATION CLIENT
+    // Infos Client
     $stmt = $pdo->prepare("SELECT * FROM clients WHERE id = ?");
     $stmt->execute([$client_id]);
     $client = $stmt->fetch();
 
-    if (!$client) {
-        session_destroy();
-        header('Location: connexion.php');
-        exit();
-    }
-
-    // 3. RÉCUPÉRATION DES COMMANDES
-    // Récupère toutes les commandes triées par date
-    $cmdStmt = $pdo->prepare("SELECT * FROM commandes WHERE client_id = ? ORDER BY date_commande DESC");
+    // Commandes récentes
+    $cmdStmt = $pdo->prepare("SELECT * FROM commandes WHERE client_id = ? ORDER BY date_commande DESC LIMIT 5");
     $cmdStmt->execute([$client_id]);
     $commandes = $cmdStmt->fetchAll();
 
-    // 4. STATISTIQUES (CORRIGÉES AVEC LES BONS STATUTS DE LA BDD)
-    
-    // A. Total Commandes
-    $countAllStmt = $pdo->prepare("SELECT COUNT(*) FROM commandes WHERE client_id = ?");
-    $countAllStmt->execute([$client_id]);
-    $totalCommandes = $countAllStmt->fetchColumn();
+    // Stats
+    $countAll = $pdo->prepare("SELECT COUNT(*) FROM commandes WHERE client_id = ?");
+    $countAll->execute([$client_id]);
+    $totalCmd = $countAll->fetchColumn();
 
-    // B. Total Dépensé (On exclut les commandes annulées 'annule')
     $sumStmt = $pdo->prepare("SELECT SUM(total) FROM commandes WHERE client_id = ? AND statut != 'annule'");
     $sumStmt->execute([$client_id]);
     $totalDepense = $sumStmt->fetchColumn() ?: 0;
 
-    // C. Commandes En Cours
-    // On compte tout ce qui n'est ni 'livre' ni 'annule'
-    // Attention : Dans votre BDD, c'est 'livre' (sans accent) et 'annule' (sans accent)
-    $countEnCoursStmt = $pdo->prepare("SELECT COUNT(*) FROM commandes WHERE client_id = ? AND statut NOT IN ('livre', 'annule')");
-    $countEnCoursStmt->execute([$client_id]);
-    $enCours = $countEnCoursStmt->fetchColumn() ?: 0;
+    $countEnCours = $pdo->prepare("SELECT COUNT(*) FROM commandes WHERE client_id = ? AND statut NOT IN ('livre', 'annule')");
+    $countEnCours->execute([$client_id]);
+    $enCours = $countEnCours->fetchColumn() ?: 0;
 
-    $stats = [
-        'total_commandes' => $totalCommandes,
-        'total_depense' => $totalDepense,
-        'en_cours' => $enCours
-    ];
-
-} catch (PDOException $e) {
-    die("Erreur technique : " . $e->getMessage());
-}
+} catch (PDOException $e) { die("Erreur : " . $e->getMessage()); }
 ?>
 
 <!DOCTYPE html>
@@ -70,246 +47,271 @@ try {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mon Compte - SOFCOS Paris</title>
-    
+    <title>Mon Espace - SOFCOS</title>
     <link href="https://fonts.googleapis.com/css2?family=Prata&family=Montserrat:wght@300;400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <style>
-        /* --- DESIGN SYSTEM LUXE --- */
         :root {
-            --green-luxe: #1A3C34;
-            --gold-accent: #C5A059;
-            --beige-bg: #fdfbf7;
-            --text-main: #2c2c2c;
+            --primary: #1A3C34; /* Vert Luxe */
+            --gold: #C5A059;    /* Or */
+            --bg-light: #F9F7F2; /* Beige très clair */
             --white: #ffffff;
-            --border-light: #e0e0e0;
+            --text: #2c2c2c;
+            --gray-light: #e5e5e5;
+            --shadow: 0 10px 30px rgba(26, 60, 52, 0.08);
         }
 
         body {
-            margin: 0; padding: 0;
             font-family: 'Montserrat', sans-serif;
-            background-color: var(--beige-bg);
-            color: var(--text-main);
+            background-color: var(--bg-light);
+            color: var(--text);
+            margin: 0;
         }
 
-        .compte-container {
-            max-width: 1200px; margin: 40px auto; padding: 0 20px;
+        /* CONTAINER GLOBAL */
+        .dashboard-container {
+            max-width: 1200px;
+            margin: 40px auto;
+            padding: 0 20px;
+            display: grid;
+            grid-template-columns: 280px 1fr;
+            gap: 40px;
         }
 
-        /* Header */
-        .compte-header {
-            background-color: var(--green-luxe); color: var(--white);
-            padding: 50px; border-radius: 4px; margin-bottom: 40px;
-            text-align: center; position: relative; overflow: hidden;
+        /* SIDEBAR DE LUXE */
+        .sidebar {
+            background: var(--white);
+            border-radius: 8px;
+            box-shadow: var(--shadow);
+            padding: 30px 0;
+            height: fit-content;
+            position: sticky;
+            top: 20px;
         }
-        .compte-header::after {
-            content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 4px;
-            background: linear-gradient(90deg, #d4af37, #f3e5ab);
+        .user-profile-summary {
+            text-align: center;
+            padding-bottom: 20px;
+            border-bottom: 1px solid var(--gray-light);
+            margin-bottom: 10px;
         }
-        .compte-header h1 { font-family: 'Prata', serif; font-size: 38px; margin: 0 0 10px 0; }
-        .compte-header p { font-family: 'Montserrat', sans-serif; font-weight: 300; opacity: 0.9; }
+        .avatar-circle {
+            width: 80px; height: 80px;
+            background: var(--bg-light);
+            color: var(--gold);
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 30px; margin: 0 auto 15px;
+            border: 2px solid var(--gold);
+        }
+        .user-name { font-family: 'Prata', serif; font-size: 18px; color: var(--primary); }
 
-        /* Stats */
-        .stats-row {
-            display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 25px; margin-bottom: 40px;
-        }
-        .stat-box {
-            background: var(--white); padding: 30px;
-            border: 1px solid rgba(0,0,0,0.05); text-align: center;
-            transition: transform 0.3s ease;
-        }
-        .stat-box:hover {
-            transform: translateY(-5px); box-shadow: 0 10px 30px rgba(0,0,0,0.05);
-            border-bottom: 3px solid var(--gold-accent);
-        }
-        .stat-box i { font-size: 32px; color: var(--gold-accent); margin-bottom: 15px; }
-        .stat-box h3 { font-family: 'Prata', serif; font-size: 32px; margin: 5px 0; color: var(--green-luxe); }
-        .stat-box p { font-size: 12px; text-transform: uppercase; letter-spacing: 1px; color: #888; }
-
-        /* Grid */
-        .compte-grid { display: grid; grid-template-columns: 280px 1fr; gap: 40px; }
-        
-        /* Sidebar */
-        .compte-sidebar { background: var(--white); padding: 30px; height: fit-content; border: 1px solid rgba(0,0,0,0.05); }
-        .sidebar-title {
-            font-family: 'Prata', serif; font-size: 18px; margin-bottom: 25px; padding-bottom: 15px;
-            border-bottom: 1px solid var(--border-light); color: var(--green-luxe);
-        }
-        .compte-menu { list-style: none; padding: 0; margin: 0; }
-        .compte-menu li { margin-bottom: 8px; }
-        .compte-menu a {
+        .menu-list { list-style: none; padding: 0; margin: 0; }
+        .menu-link {
             display: flex; align-items: center; gap: 15px;
-            padding: 14px 20px; color: var(--text-main);
-            text-decoration: none; font-size: 13px; font-weight: 500;
-            transition: all 0.3s; border-left: 3px solid transparent;
+            padding: 16px 30px;
+            text-decoration: none;
+            color: #666;
+            font-weight: 500;
+            font-size: 14px;
+            transition: all 0.3s ease;
+            border-left: 4px solid transparent;
         }
-        .compte-menu a:hover, .compte-menu a.active {
-            background: #fcfcfc; color: var(--green-luxe); border-left: 3px solid var(--gold-accent);
+        .menu-link:hover, .menu-link.active {
+            background: linear-gradient(90deg, rgba(197,160,89,0.1) 0%, rgba(255,255,255,0) 100%);
+            color: var(--primary);
+            border-left-color: var(--gold);
         }
-        .compte-menu a.logout { color: #d63031; }
-        .compte-menu a.logout:hover { background: #fff5f5; border-color: #d63031; }
+        .menu-link.logout { color: #d63031; margin-top: 20px; border-top: 1px solid var(--gray-light); }
+        .menu-link.logout:hover { background: #fff5f5; border-color: #d63031; }
 
-        /* Content */
-        .compte-content { background: var(--white); padding: 40px; border: 1px solid rgba(0,0,0,0.05); }
+        /* CONTENU PRINCIPAL */
+        .main-content { display: flex; flex-direction: column; gap: 30px; }
+
+        /* HEADER SECTION */
+        .welcome-header {
+            background: var(--primary);
+            color: var(--white);
+            padding: 40px;
+            border-radius: 8px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: var(--shadow);
+        }
+        .welcome-header h1 { font-family: 'Prata', serif; margin: 0 0 10px 0; font-size: 28px; }
+        .welcome-header p { margin: 0; opacity: 0.8; font-weight: 300; }
+        .welcome-header::after {
+            content: ''; position: absolute; top: -50%; right: -10%; width: 300px; height: 300px;
+            background: radial-gradient(circle, rgba(197,160,89,0.3) 0%, rgba(255,255,255,0) 70%);
+            border-radius: 50%;
+        }
+
+        /* STATS CARDS */
+        .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+        .stat-card {
+            background: var(--white); padding: 25px;
+            border-radius: 8px; box-shadow: var(--shadow);
+            display: flex; align-items: center; justify-content: space-between;
+            transition: transform 0.3s;
+        }
+        .stat-card:hover { transform: translateY(-5px); }
+        .stat-info h3 { font-size: 24px; color: var(--primary); margin: 5px 0 0 0; font-family: 'Prata', serif; }
+        .stat-info p { margin: 0; font-size: 11px; text-transform: uppercase; color: #888; letter-spacing: 1px; }
+        .stat-icon {
+            width: 50px; height: 50px; background: rgba(197,160,89,0.1);
+            color: var(--gold); border-radius: 50%;
+            display: flex; align-items: center; justify-content: center; font-size: 20px;
+        }
+
+        /* LISTE DES COMMANDES */
+        .section-box { background: var(--white); padding: 30px; border-radius: 8px; box-shadow: var(--shadow); }
         .section-title {
-            font-family: 'Prata', serif; font-size: 26px; margin-bottom: 30px; padding-bottom: 15px;
-            border-bottom: 1px solid var(--border-light); color: var(--green-luxe);
+            font-family: 'Prata', serif; font-size: 20px; color: var(--primary);
+            padding-bottom: 15px; border-bottom: 1px solid var(--gray-light); margin-bottom: 20px;
         }
 
-        /* Commande Cards */
-        .commande-card {
-            border: 1px solid var(--border-light); padding: 25px; margin-bottom: 20px; transition: all 0.3s;
-        }
-        .commande-card:hover {
-            border-color: var(--gold-accent); box-shadow: 0 5px 20px rgba(0,0,0,0.05);
-        }
-        .commande-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .cmd-table { width: 100%; border-collapse: collapse; }
+        .cmd-table th { text-align: left; padding: 15px; font-size: 11px; text-transform: uppercase; color: #999; }
+        .cmd-table td { padding: 15px; border-bottom: 1px solid #f0f0f0; font-size: 14px; }
+        .cmd-table tr:last-child td { border-bottom: none; }
         
-        /* Badges Corrigés */
-        .badge { padding: 6px 14px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; }
-        .badge-en_attente { background: #fff8e1; color: #f39c12; }
-        .badge-confirme { background: #e8f5e9; color: #27ae60; }
-        .badge-expedie { background: #e3f2fd; color: #2980b9; }
-        .badge-livre { background: #d4edda; color: #155724; }
-        .badge-annule { background: #f8d7da; color: #721c24; }
+        /* Badges */
+        .badge { padding: 6px 12px; border-radius: 30px; font-size: 11px; font-weight: 600; text-transform: uppercase; }
+        .badge.en_attente { background: #FFF8E1; color: #F39C12; }
+        .badge.livre { background: #E8F5E9; color: #2E7D32; }
+        .badge.annule { background: #FFEBEE; color: #C62828; }
+        .badge.expedie { background: #E3F2FD; color: #1565C0; }
 
-        .commande-details {
-            display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; padding-top: 20px; border-top: 1px dashed var(--border-light);
+        .btn-view {
+            padding: 8px 16px; background: var(--white); border: 1px solid var(--gray-light);
+            color: var(--text); text-decoration: none; font-size: 12px; font-weight: 600;
+            border-radius: 4px; transition: 0.3s;
         }
-        .detail-item { font-size: 13px; color: #666; }
-        .detail-item strong { display: block; color: var(--green-luxe); font-size: 11px; text-transform: uppercase; margin-bottom: 4px; }
-        
-        .btn-small {
-            display: inline-block; padding: 8px 20px; background: var(--text-main); color: white;
-            font-size: 11px; text-transform: uppercase; letter-spacing: 1px; font-weight: 600; text-decoration: none; transition: 0.3s;
-        }
-        .btn-small:hover { background: var(--gold-accent); }
-        
-        .btn-action {
-            display: inline-block; padding: 12px 30px; background: var(--green-luxe); color: white;
-            text-decoration: none; text-transform: uppercase; font-size: 12px; letter-spacing: 1px; margin-top: 20px;
-        }
-        .empty-state { text-align: center; padding: 50px 20px; }
-        .empty-state i { font-size: 48px; color: #ddd; margin-bottom: 20px; }
+        .btn-view:hover { border-color: var(--gold); color: var(--gold); }
+        /* Styles des Badges Statuts */
+.badge { 
+    padding: 6px 12px; border-radius: 30px; font-size: 11px; 
+    font-weight: 600; text-transform: uppercase; display: inline-flex; align-items: center; gap: 5px;
+}
+.badge.en_attente { background: #FFF8E1; color: #F39C12; border: 1px solid #FFE082; }
+.badge.confirme   { background: #E8F5E9; color: #2E7D32; border: 1px solid #A5D6A7; } /* Vert clair */
+.badge.expedie    { background: #E3F2FD; color: #1565C0; border: 1px solid #90CAF9; } /* Bleu */
+.badge.livre      { background: #1A3C34; color: #C5A059; border: 1px solid #1A3C34; } /* Luxe : Fond vert foncé, texte or */
+.badge.annule     { background: #FFEBEE; color: #C62828; border: 1px solid #EF9A9A; }
 
         @media (max-width: 900px) {
-            .compte-grid, .commande-details { grid-template-columns: 1fr; }
+            .dashboard-container { grid-template-columns: 1fr; }
+            .stats-grid { grid-template-columns: 1fr; }
+            .cmd-table { display: block; overflow-x: auto; }
         }
     </style>
 </head>
 <body>
 
-    <?php include 'includes/header.php'; ?>
+<?php include 'includes/header.php'; ?>
+
+<div class="dashboard-container">
     
-    <div class="compte-container">
-        
-        <div class="compte-header">
-            <h1>Bienvenue, <?= htmlspecialchars($client['prenom'] . ' ' . $client['nom']) ?></h1>
-            <p>Espace client personnel & suivi des commandes</p>
+    <div class="sidebar">
+        <div class="user-profile-summary">
+            <div class="avatar-circle">
+                <?= strtoupper(substr($client['prenom'], 0, 1)) ?>
+            </div>
+            <div class="user-name"><?= htmlspecialchars($client['prenom']) ?></div>
         </div>
-        
-        <div class="stats-row">
-            <div class="stat-box">
-                <i class="fas fa-shopping-bag"></i>
-                <h3><?= $stats['total_commandes'] ?></h3>
-                <p>Commandes passées</p>
-            </div>
-            
-            <div class="stat-box">
-                <i class="fas fa-euro-sign"></i> 
-                <h3><?= number_format($stats['total_depense'], 2, ',', ' ') ?> DH</h3>
-                <p>Total Achats</p>
-            </div>
-            
-            <div class="stat-box">
-                <i class="fas fa-truck-loading"></i>
-                <h3><?= $stats['en_cours'] ?></h3>
-                <p>En cours de livraison</p>
-            </div>
-        </div>
-        
-        <div class="compte-grid">
-            <div class="compte-sidebar">
-                <div class="sidebar-title">Mon Menu</div>
-                <ul class="compte-menu">
-                    <li><a href="mon-compte.php" class="active"><i class="fas fa-home"></i> Tableau de bord</a></li>
-                    <li><a href="mes-commandes.php"><i class="fas fa-box-open"></i> Mes commandes</a></li>
-                    <li><a href="mes-informations.php"><i class="far fa-user"></i> Mes informations</a></li>
-                    <li><a href="mes-adresses.php"><i class="fas fa-map-marker-alt"></i> Carnet d'adresses</a></li>
-                    <li><a href="changer-mot-de-passe.php"><i class="fas fa-lock"></i> Sécurité</a></li>
-                    <li style="margin-top: 15px; border-top: 1px solid #eee; padding-top: 15px;">
-                        <a href="deconnexion.php" class="logout"><i class="fas fa-sign-out-alt"></i> Déconnexion</a>
-                    </li>
-                </ul>
-            </div>
-            
-            <div class="compte-content">
-                <h2 class="section-title">Mes dernières commandes</h2>
-                
-                <?php if(empty($commandes)): ?>
-                    <div class="empty-state">
-                        <i class="fas fa-shopping-basket"></i>
-                        <h3 style="font-family:'Prata', serif; color:var(--text-main);">Aucune commande</h3>
-                        <p style="color:#999; margin-bottom: 20px;">Vous n'avez pas encore succombé à nos produits.</p>
-                        <a href="produits.php" class="btn-action">Découvrir la boutique</a>
-                    </div>
-                <?php else: ?>
-                    
-                    <div class="commandes-list">
-                        <?php foreach(array_slice($commandes, 0, 3) as $cmd): ?>
-                            <div class="commande-card">
-                                <div class="commande-header">
-                                    <h3>CMD #<?= $cmd['id'] ?></h3>
-                                    <?php 
-                                        // Gestion dynamique des couleurs selon le statut exact de la BDD
-                                        $statusClass = 'badge-en_attente';
-                                        
-                                        // Nettoyage de la chaîne (supprime espaces et met en minuscule)
-                                        $statut_clean = strtolower(trim($cmd['statut']));
-                                        
-                                        if($statut_clean == 'confirme') $statusClass = 'badge-confirme';
-                                        if($statut_clean == 'expedie') $statusClass = 'badge-expedie';
-                                        if($statut_clean == 'livre') $statusClass = 'badge-livre';
-                                        if($statut_clean == 'annule') $statusClass = 'badge-annule';
-                                    ?>
-                                    <span class="badge <?= $statusClass ?>">
-                                        <?= ucfirst($cmd['statut']) ?>
-                                    </span>
-                                </div>
-                                
-                                <div class="commande-details">
-                                    <div class="detail-item">
-                                        <strong>Date</strong>
-                                        <i class="far fa-calendar-alt"></i> <?= date('d/m/Y', strtotime($cmd['date_commande'])) ?>
-                                    </div>
-                                    <div class="detail-item">
-                                        <strong>Montant</strong>
-                                        <?= number_format($cmd['total'], 2, ',', ' ') ?> DH
-                                    </div>
-                                    <div class="detail-item" style="text-align: right;">
-                                        <a href="suivi.php?id=<?= $cmd['id'] ?>" class="btn-small">
-                                            Détails
-                                        </a>
-                                    </div>
-                                </div>
-                            </div>
-                        <?php endforeach; ?>
-                        
-                        <?php if(count($commandes) > 3): ?>
-                            <div style="text-align: center; margin-top: 30px;">
-                                <a href="mes-commandes.php" class="btn-action" style="background:transparent; color:var(--green-luxe); border:1px solid var(--green-luxe);">
-                                    Voir tout l'historique
-                                </a>
-                            </div>
-                        <?php endif; ?>
-                    </div>
-                <?php endif; ?>
-            </div>
-        </div>
+        <ul class="menu-list">
+            <li><a href="mon-compte.php" class="menu-link active"><i class="fas fa-th-large"></i> Tableau de bord</a></li>
+            <li><a href="mes-commandes.php" class="menu-link"><i class="fas fa-box"></i> Mes commandes</a></li>
+            <li><a href="mes-informations.php" class="menu-link"><i class="fas fa-user-edit"></i> Profil</a></li>
+            <li><a href="mes-adresses.php" class="menu-link"><i class="fas fa-map-marker-alt"></i> Adresses</a></li>
+            <li><a href="changer-mot-de-passe.php" class="menu-link"><i class="fas fa-lock"></i> Sécurité</a></li>
+            <li><a href="deconnexion.php" class="menu-link logout"><i class="fas fa-sign-out-alt"></i> Déconnexion</a></li>
+        </ul>
     </div>
-    
-    <?php include 'includes/footer.php'; ?>
+
+    <div class="main-content">
+        
+        <div class="welcome-header">
+            <h1>Bonjour, <?= htmlspecialchars($client['prenom']) ?></h1>
+            <p>Heureux de vous revoir chez SOFCOS. Voici l'état de votre compte.</p>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-info"><p>Total Commandes</p><h3><?= $totalCmd ?></h3></div>
+                <div class="stat-icon"><i class="fas fa-shopping-bag"></i></div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-info"><p>Total Dépensé</p><h3><?= number_format($totalDepense, 0, ',', ' ') ?> DH</h3></div>
+                <div class="stat-icon"><i class="fas fa-wallet"></i></div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-info"><p>En cours</p><h3><?= $enCours ?></h3></div>
+                <div class="stat-icon"><i class="fas fa-truck-loading"></i></div>
+            </div>
+        </div>
+
+        <div class="section-box">
+            <h2 class="section-title">Dernières commandes</h2>
+            <?php if(empty($commandes)): ?>
+                <p style="text-align:center; color:#999; padding:20px;">Aucune commande pour le moment.</p>
+            <?php else: ?>
+                <table class="cmd-table">
+                    <thead>
+                        <tr>
+                            <th>N° Com.</th>
+                            <th>Date</th>
+                            <th>Total</th>
+                            <th>Statut</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+    <?php foreach($commandes as $cmd): 
+        // 1. Nettoyage du statut pour éviter les erreurs
+        $st = strtolower(trim($cmd['statut'])); // tout en minuscule, sans espaces
+        
+        // 2. Définition de la classe CSS et du texte
+        $badgeClass = 'en_attente'; // Par défaut
+        $icon = '<i class="fas fa-clock"></i>';
+
+        if(strpos($st, 'livre') !== false) {
+            $badgeClass = 'livre';
+            $icon = '<i class="fas fa-check-circle"></i>';
+        }
+        elseif(strpos($st, 'expedi') !== false) {
+            $badgeClass = 'expedie';
+            $icon = '<i class="fas fa-truck"></i>';
+        }
+        elseif(strpos($st, 'confirm') !== false) {
+            $badgeClass = 'confirme';
+            $icon = '<i class="fas fa-thumbs-up"></i>';
+        }
+        elseif(strpos($st, 'annul') !== false) {
+            $badgeClass = 'annule';
+            $icon = '<i class="fas fa-times-circle"></i>';
+        }
+    ?>
+    <tr>
+        <td><strong>#<?= $cmd['id'] ?></strong></td>
+        <td><?= date('d/m/Y', strtotime($cmd['date_commande'])) ?></td>
+        <td style="font-weight:600;"><?= number_format($cmd['total'], 2) ?> DH</td>
+        <td>
+            <span class="badge <?= $badgeClass ?>">
+                <?= $icon ?> <?= ucfirst($cmd['statut']) ?>
+            </span>
+        </td>
+        <td><a href="suivi.php?id=<?= $cmd['id'] ?>" class="btn-view">Gérer</a></td>
+    </tr>
+    <?php endforeach; ?>
+</tbody>
+                </table>
+            <?php endif; ?>
+        </div>
+
+    </div>
+</div>
+
+<?php include 'includes/footer.php'; ?>
 </body>
 </html>
