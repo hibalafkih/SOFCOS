@@ -176,11 +176,7 @@ try {
         .cmd-table tr:last-child td { border-bottom: none; }
         
         /* Badges */
-        .badge { padding: 6px 12px; border-radius: 30px; font-size: 11px; font-weight: 600; text-transform: uppercase; }
-        .badge.en_attente { background: #FFF8E1; color: #F39C12; }
-        .badge.livre { background: #E8F5E9; color: #2E7D32; }
-        .badge.annule { background: #FFEBEE; color: #C62828; }
-        .badge.expedie { background: #E3F2FD; color: #1565C0; }
+        
 
         .btn-view {
             padding: 8px 16px; background: var(--white); border: 1px solid var(--gray-light);
@@ -189,15 +185,6 @@ try {
         }
         .btn-view:hover { border-color: var(--gold); color: var(--gold); }
         /* Styles des Badges Statuts */
-.badge { 
-    padding: 6px 12px; border-radius: 30px; font-size: 11px; 
-    font-weight: 600; text-transform: uppercase; display: inline-flex; align-items: center; gap: 5px;
-}
-.badge.en_attente { background: #FFF8E1; color: #F39C12; border: 1px solid #FFE082; }
-.badge.confirme   { background: #E8F5E9; color: #2E7D32; border: 1px solid #A5D6A7; } /* Vert clair */
-.badge.expedie    { background: #E3F2FD; color: #1565C0; border: 1px solid #90CAF9; } /* Bleu */
-.badge.livre      { background: #1A3C34; color: #C5A059; border: 1px solid #1A3C34; } /* Luxe : Fond vert foncé, texte or */
-.badge.annule     { background: #FFEBEE; color: #C62828; border: 1px solid #EF9A9A; }
 
         @media (max-width: 900px) {
             .dashboard-container { grid-template-columns: 1fr; }
