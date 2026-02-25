@@ -6,7 +6,8 @@ use PHPMailer\PHPMailer\Exception;
 use PHPMailer\PHPMailer\SMTP;
 
 // Charger la configuration
-require __DIR__ . '/../config.php';
+// Utilise require_once pour éviter les inclusions multiples et la redéclaration de fonctions
+require_once __DIR__ . '/../config.php';
 
 // Le chemin doit remonter d'un cran (..) pour trouver le dossier vendor
 require __DIR__ . '/../vendor/autoload.php';
