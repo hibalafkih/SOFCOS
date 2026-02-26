@@ -1,189 +1,293 @@
-================================================================================
-                    STRUCTURE DU PROJET SOFCOS
-                  Plateforme E-commerce Complète
-================================================================================
-
-SOFCOS/
-│
-├── 📋 FICHIERS RACINE (Configuration & Accueil)
-│   ├── index.php                      (Page d'accueil)
-│   ├── config.php                     (Configuration générale)
-│   ├── composer.json                  (Dépendances PHP)
-│   ├── composer.lock                  (Versions des dépendances)
-│   ├── database.sql                   (Structure base de données)
-│   └── .gitignore                     (Fichiers ignorés Git)
-│
-│
-├── 🔐 AUTHENTIFICATION & COMPTE UTILISATEUR
-│   ├── connexion.php                  (Formulaire connexion)
-│   ├── inscription.php                (Formulaire inscription)
-│   ├── finaliser_inscription.php      (Finalisation inscription)
-│   ├── deconnexion.php                (Déconnexion)
-│   ├── mon-compte.php                 (Gestion compte utilisateur)
-│   ├── mot-de-passe-oublie.php        (Récupération mot de passe)
-│   ├── reset_password.php             (Réinitialiser mot de passe)
-│   ├── google_login.php               (Connexion Google)
-│   └── google_callback.php            (Callback Google OAuth)
-│
-│
-├── 🛍️  PANIER & COMMANDES
-│   ├── panier.php                     (Affichage panier)
-│   ├── panier-action.php              (Actions panier : ajouter, supprimer, etc)
-│   ├── commande.php                   (Affichage commandes)
-│   ├── valider_commande.php           (Validation/finalisation commande)
-│   ├── confirmation.php               (Confirmation commande)
-│   └── suivi.php                      (Suivi livraison)
-│
-│
-├── 📦 PRODUITS & CATALOGUE
-│   ├── produits.php                   (Liste des produits)
-│   └── produit-detail.php             (Détail d'un produit)
-│
-│
-├── 💳 PAIEMENT
-│   └── paiement.php                   (Traitement du paiement)
-│
-│
-├── 📞 CONTACT & MESSAGES
-│   ├── contact.php                    (Formulaire contact)
-│   └── details_message.php            (Détails d'un message)
-│
-│
-├── 📁 /admin/ (PANNEAU D'ADMINISTRATION)
-│   │
-│   ├── 🔐 AUTHENTIFICATION ADMIN
-│   │   ├── admins.php                 (Gestion des administrateurs)
-│   │   ├── register.php               (Enregistrement admin)
-│   │   ├── reset_password.php         (Réinitialiser mot de passe admin)
-│   │   ├── logout.php                 (Déconnexion admin)
-│   │   └── mon_compte.php             (Compte admin)
-│   │
-│   ├── 📊 TABLEAU DE BORD
-│   │   ├── dashboard.php              (Accueil admin)
-│   │   └── historique.php             (Historique des actions)
-│   │
-│   ├── 📦 GESTION DES PRODUITS
-│   │   ├── produits.php               (Liste des produits)
-│   │   ├── produits_ajout.php         (Ajout/Modification produits)
-│   │   ├── categories.php             (Gestion des catégories)
-│   │   └── marques.php                (Gestion des marques)
-│   │
-│   ├── 👥 GESTION DES CLIENTS
-│   │   ├── clients.php                (Liste des clients)
-│   │   └── client_details.php         (Détails d'un client)
-│   │
-│   ├── 📦 GESTION DES COMMANDES
-│   │   ├── commandes.php              (Liste des commandes)
-│   │   ├── details_commande.php       (Détails d'une commande)
-│   │   ├── imprimer_commande.php      (Impression commande)
-│   │   ├── bon_livraison.php          (Bon de livraison)
-│   │   └── ticket_commande.php        (Ticket de commande)
-│   │
-│   ├── 🚚 GESTION DES LIVRAISONS
-│   │   └── livraisons.php             (Suivi des livraisons)
-│   │
-│   ├── 👨‍💼 ÉQUIPE LIVREURS
-│   │   └── equipe_livreurs.php        (Gestion livreurs)
-│   │
-│   ├── 💬 COMMUNICATION
-│   │   ├── contact.php                (Messages de contact)
-│   │   └── details_message.php        (Détails des messages)
-│   │
-│   ├── 🔧 OUTILS
-│   │   ├── get_admin.php              (API) Récupération données)
-│   │   ├── sidebar.php                (Barre latérale)
-│   │   ├── admin_style.css            (Styles admin)
-│   │   └── database.sql               (Données admin)
-│   │
-│   └── 📁 /admin/includes/
-│       ├── header.php                 (En-tête admin)
-│       └── sidebar.php                (Sidebar admin)
-│
-│
-├── 📁 /livreur/ (PORTAIL LIVREURS)
-│   ├── index.php                      (Accueil livreur)
-│   ├── login.php                      (Connexion livreur)
-│   ├── envoyer_message.php            (Envoi de messages)
-│   ├── scan.php                       (Interface de scan)
-│   └── valider_scan.php               (Validation scan commande)
-│
-│
-├── 📁 /api/ (API REST)
-│   └── get_produit.php                (API récupération produits)
-│
-│
-├── 📁 /includes/ (COMPOSANTS RÉUTILISABLES)
-│   ├── header.php                     (En-tête page)
-│   ├── footer.php                     (Pied de page)
-│   └── EmailManager.php               (Gestion des emails)
-│
-│
-├── 📁 /css/ (FICHIERS CSS)
-│   ├── style.css                      (Styles principaux)
-│   ├── admin.css                      (Styles admin)
-│   ├── produits.css                   (Styles produkts)
-│   └── panier.css                     (Styles panier)
-│
-│
-├── 📁 /js/ (FICHIERS JAVASCRIPT)
-│   ├── main.js                        (Script principal)
-│   └── produit.js                     (Script produits)
-│
-│
-├── 📁 /images/ (RESSOURCES IMAGES)
-│   ├── placeholder.jpg                (Image par défaut)
-│   └── /produits/                     (Images des produits)
-│       └── (images produits stockées ici)
-│
-│
-├── 📁 /uploads/ (FICHIERS UPLOADÉS)
-│   ├── /marques/                      (Logos/images marques)
-│   └── /produits/                     (Images produits uploadées)
-│
-│
-├── 📁 /vendor/ (DÉPENDANCES COMPOSER)
-│   └── /phpmailer/                    (Librairie d'envoi d'emails)
-│       └── /src/                      (Code source PHPMailer)
-│
-│
-├── 📁 /.git/ (GIT - CONTRÔLE DE VERSION)
-│   └── (historique et branches Git)
-│
-│
-└── 📁 /.vscode/ (CONFIGURATION VS CODE)
-    └── (paramètres spécifiques au projet)
-
-================================================================================
-                            RÉSUMÉ FONCTIONNEL
-================================================================================
-
-PAGES PUBLIQUES (Clients)
-  └── Accueil, Produits, Panier, Commandes, Compte, Contact, Suivi
-
-PAGES D'AUTHENTIFICATION
-  └── Connexion, Inscription, Mot de passe, Google OAuth
-
-PANEL ADMINISTRATEUR
-  └── Dashboard, Produits, Clients, Commandes, Livraisons, Livreurs, Messages
-
-PORTAIL LIVREURS
-  └── Connexion, Scanner, Messages, Validation scan
-
-API & COMPOSANTS
-  └── API produits, Emails, En-têtes, Pieds de page
-
-ASSETS
-  └── CSS, JavaScript, Images, Uploads
-
-================================================================================
-                         TECHNOLOGIES UTILISÉES
-================================================================================
-
-Backend:        PHP
-Base de données: MySQL/MariaDB
-Frontend:       HTML, CSS, JavaScript
-Emailing:       PHPMailer
-Authentification: Google OAuth, Session PHP
-Gestion projets: Composer, Git
-
-================================================================================
+Structure du dossier
+Le num�ro de s�rie du volume est 1468-3425
+C:.
+|   .env
+|   .env.example
+|   .gitignore
+|   beverly-kimberly--KAj3MBsH7U-unsplash.jpg
+|   changer-mot-de-passe.php
+|   commande.php
+|   composer.json
+|   composer.lock
+|   config.php
+|   CONFIG_SETUP.md
+|   confirmation.php
+|   connexion.php
+|   contact.php
+|   database.sql
+|   debug.php
+|   deconnexion.php
+|   details_message.php
+|   finaliser_inscription.php
+|   GCP_DEPLOYMENT.md
+|   Gemini_Generated_Image_l6xvlsl6xvlsl6xv.png
+|   google_callback.php
+|   google_login.php
+|   index.php
+|   inscription.php
+|   mes-adresses.php
+|   mes-commandes.php
+|   mes-informations.php
+|   mon-compte.php
+|   mot-de-passe-oublie.php
+|   paiement.php
+|   panier-action.php
+|   panier.php
+|   produit-detail.php
+|   produits.php
+|   reset_password.php
+|   STRUCTURE.txt
+|   suivi.php
+|   valider_commande.php
+|   
++---.vscode
+|       settings.json
+|       
++---admin
+|   |   admins.php
+|   |   admin_style.css
+|   |   bon_livraison.php
+|   |   categories.php
+|   |   clients.php
+|   |   client_details.php
+|   |   commandes.php
+|   |   contact.php
+|   |   dashboard.php
+|   |   database.sql
+|   |   details_commande.php
+|   |   details_message.php
+|   |   equipe_livreurs.php
+|   |   get_admin.php
+|   |   historique.php
+|   |   imprimer_commande.php
+|   |   livraisons.php
+|   |   logout.php
+|   |   marques.php
+|   |   mon_compte.php
+|   |   produits.php
+|   |   produits_ajout.php
+|   |   register.php
+|   |   reset_password.php
+|   |   sidebar.php
+|   |   ticket_commande.php
+|   |   
+|   \---includes
+|           header.php
+|           sidebar.php
+|           
++---api
+|       get_produit.php
+|       
++---css
+|       admin.css
+|       panier.css
+|       produits.css
+|       style.css
+|       
++---images
+|   |   placeholder.jpg
+|   |   
+|   \---produits
++---includes
+|       EmailManager.php
+|       footer.php
+|       header.php
+|       
++---js
+|       main.js
+|       produit.js
+|       
++---livreur
+|       envoyer_message.php
+|       index.php
+|       login.php
+|       scan.php
+|       valider_scan.php
+|       
++---uploads
+|   |   Gemini_Generated_Image_lhqk2dlhqk2dlhqk.png
+|   |   
+|   +---marques
+|   |       marque_1770208935.webp
+|   |       marque_1770208983.webp
+|   |       
+|   \---produits
+|           19_gal_0_1769543734.webp
+|           19_gal_0_1769543910.webp
+|           19_gal_0_1769544537.webp
+|           19_gal_0_1769544591.webp
+|           19_gal_0_1769544683.webp
+|           19_gal_1_1769543910.webp
+|           19_gal_1_1769544537.webp
+|           19_gal_1_1769544591.webp
+|           19_gal_1_1769544683.webp
+|           19_gal_2_1769543910.webp
+|           19_gal_2_1769544537.webp
+|           19_gal_2_1769544591.webp
+|           20_gal_0_1769544916.webp
+|           20_gal_1_1769544917.webp
+|           20_gal_2_1769544917.webp
+|           21_gal_0_1769547749.webp
+|           21_gal_1_1769547749.jpg
+|           22_gal_0_1769548243.webp
+|           22_gal_1_1769548243.webp
+|           22_gal_2_1769548243.jpg
+|           22_gal_3_1769548243.webp
+|           23_gal_0_1769548752.webp
+|           23_gal_1_1769548752.webp
+|           23_gal_2_1769548752.webp
+|           24_gal_0_1769549650.webp
+|           24_gal_2_1769549650.webp
+|           26_gal_0_1769550137.webp
+|           29_gal_0_1769550965.webp
+|           29_gal_1_1769550965.webp
+|           30_gal_0_1769551118.webp
+|           31_gal_0_1769551231.webp
+|           32_gal_0_1769551428.webp
+|           34_gal_0_1769552626.webp
+|           34_gal_1_1769552626.webp
+|           35_gal_0_1769598001.webp
+|           36_gal_0_1769598304.webp
+|           36_gal_0_1769598981.webp
+|           36_gal_1_1769598304.webp
+|           36_gal_1_1769598981.webp
+|           36_gal_2_1769598304.webp
+|           36_gal_2_1769598981.webp
+|           36_gal_3_1769598304.webp
+|           36_gal_3_1769598981.webp
+|           37_gal_0_1769599460.jpg
+|           37_gal_1_1769599460.jpg
+|           39_gal_0_1769600083.webp
+|           40_gal_0_1769600278.webp
+|           40_gal_1_1769600279.webp
+|           40_gal_2_1769600279.webp
+|           40_gal_3_1769600279.webp
+|           prod_1765746951_f924fb57fafc5b7c.webp
+|           prod_1765797363_a99d070383220255.jpg
+|           prod_1765995067_717dcb0e1ec4636d.jpg
+|           prod_696bd1bf05731.jpg
+|           prod_697911be48955.webp
+|           prod_697912ae82597.webp
+|           prod_69791b8f31c68.webp
+|           prod_69791ce01ff11.webp
+|           prod_6979272891595.webp
+|           prod_6979276a5bac8.webp
+|           prod_69792792ca49d.webp
+|           prod_697927b5a43b3.webp
+|           prod_697927bb39f3b.webp
+|           prod_697927e55cfbf.webp
+|           prod_697929d3af05a.webp
+|           prod_69792bd013b72.webp
+|           prod_69792f52551ee.webp
+|           prod_697930789ab36.webp
+|           prod_69793139dae36.webp
+|           prod_697931f73a4b7.webp
+|           prod_697932a3850fb.webp
+|           prod_6979347510bbd.webp
+|           prod_6979350e9d115.webp
+|           prod_6979357fd7f39.webp
+|           prod_697936448ba4b.webp
+|           prod_697936fd06c5f.webp
+|           prod_69793af21bcd5.webp
+|           prod_6979ec318c83f.webp
+|           prod_6979f005c02a7.webp
+|           prod_6979f1e44e685.jpg
+|           prod_6979f28e1d0d8.jpg
+|           prod_6979f453a0133.webp
+|           prod_6979f516ec5a5.webp
+|           
+\---vendor
+    |   autoload.php
+    |   
+    +---composer
+    |       autoload_classmap.php
+    |       autoload_namespaces.php
+    |       autoload_psr4.php
+    |       autoload_real.php
+    |       autoload_static.php
+    |       ClassLoader.php
+    |       installed.json
+    |       installed.php
+    |       InstalledVersions.php
+    |       LICENSE
+    |       platform_check.php
+    |       
+    \---phpmailer
+        \---phpmailer
+            |   COMMITMENT
+            |   composer.json
+            |   get_oauth_token.php
+            |   LICENSE
+            |   README.md
+            |   SECURITY.md
+            |   SMTPUTF8.md
+            |   VERSION
+            |   
+            +---language
+            |       phpmailer.lang-af.php
+            |       phpmailer.lang-ar.php
+            |       phpmailer.lang-as.php
+            |       phpmailer.lang-az.php
+            |       phpmailer.lang-ba.php
+            |       phpmailer.lang-be.php
+            |       phpmailer.lang-bg.php
+            |       phpmailer.lang-bn.php
+            |       phpmailer.lang-ca.php
+            |       phpmailer.lang-cs.php
+            |       phpmailer.lang-da.php
+            |       phpmailer.lang-de.php
+            |       phpmailer.lang-el.php
+            |       phpmailer.lang-eo.php
+            |       phpmailer.lang-es.php
+            |       phpmailer.lang-et.php
+            |       phpmailer.lang-fa.php
+            |       phpmailer.lang-fi.php
+            |       phpmailer.lang-fo.php
+            |       phpmailer.lang-fr.php
+            |       phpmailer.lang-gl.php
+            |       phpmailer.lang-he.php
+            |       phpmailer.lang-hi.php
+            |       phpmailer.lang-hr.php
+            |       phpmailer.lang-hu.php
+            |       phpmailer.lang-hy.php
+            |       phpmailer.lang-id.php
+            |       phpmailer.lang-it.php
+            |       phpmailer.lang-ja.php
+            |       phpmailer.lang-ka.php
+            |       phpmailer.lang-ko.php
+            |       phpmailer.lang-ku.php
+            |       phpmailer.lang-lt.php
+            |       phpmailer.lang-lv.php
+            |       phpmailer.lang-mg.php
+            |       phpmailer.lang-mn.php
+            |       phpmailer.lang-ms.php
+            |       phpmailer.lang-nb.php
+            |       phpmailer.lang-nl.php
+            |       phpmailer.lang-pl.php
+            |       phpmailer.lang-pt.php
+            |       phpmailer.lang-pt_br.php
+            |       phpmailer.lang-ro.php
+            |       phpmailer.lang-ru.php
+            |       phpmailer.lang-si.php
+            |       phpmailer.lang-sk.php
+            |       phpmailer.lang-sl.php
+            |       phpmailer.lang-sr.php
+            |       phpmailer.lang-sr_latn.php
+            |       phpmailer.lang-sv.php
+            |       phpmailer.lang-tl.php
+            |       phpmailer.lang-tr.php
+            |       phpmailer.lang-uk.php
+            |       phpmailer.lang-ur.php
+            |       phpmailer.lang-vi.php
+            |       phpmailer.lang-zh.php
+            |       phpmailer.lang-zh_cn.php
+            |       
+            \---src
+                    DSNConfigurator.php
+                    Exception.php
+                    OAuth.php
+                    OAuthTokenProvider.php
+                    PHPMailer.php
+                    POP3.php
+                    SMTP.php
+                    

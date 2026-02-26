@@ -21,6 +21,24 @@ try {
     $cmdStmt = $pdo->prepare("SELECT * FROM commandes WHERE client_id = ? ORDER BY date_commande DESC");
     $cmdStmt->execute([$client_id]);
     $commandes = $cmdStmt->fetchAll();
+    // garder la dernière commande pour affichage de statut en haut
+    $lastCommande = $commandes[0] ?? null;
+    // fonction utilitaire unique pour mapper statuts en classe+icone
+    function statutBadge($statut) {
+        $s = strtolower(trim($statut));
+        $map = [
+            'en attente'   => ['class'=>'en_attente','icon'=>'<i class="fas fa-clock"></i>'],
+            'préparation'  => ['class'=>'preparation','icon'=>'<i class="fas fa-cog"></i>'],
+            'expédié'      => ['class'=>'expedie','icon'=>'<i class="fas fa-truck"></i>'],
+            'en livraison' => ['class'=>'en_livraison','icon'=>'<i class="fas fa-shipping-fast"></i>'],
+            'livré'        => ['class'=>'livre','icon'=>'<i class="fas fa-check"></i>'],
+            'annulé'       => ['class'=>'annule','icon'=>'<i class="fas fa-times"></i>'],
+        ];
+        foreach ($map as $key => $info) {
+            if(strpos($s,$key)!==false) return $info;
+        }
+        return ['class'=>'en_attente','icon'=>'<i class="fas fa-clock"></i>'];
+    }
 
 } catch (PDOException $e) { die("Erreur : " . $e->getMessage()); }
 ?>
@@ -68,7 +86,12 @@ try {
         .cmd-table tr:hover { background-color: #fafafa; }
 
         /* BADGES */
-        .badge { padding: 6px 12px; border-radius: 30px; font-size: 11px; font-weight: 600; text-transform: uppercase; display: inline-flex; align-items: center; gap: 5px; }
+        .status-badge, .cmd-table .badge {
+            padding: 6px 12px; border-radius: 30px; font-size: 11px; font-weight: 600; text-transform: uppercase; display: inline-flex; align-items: center; gap: 5px;
+        }
+        /* nouveaux statuts exemple */
+        .status-badge.preparation { background:#fff3cd; color:#856404; }
+        .status-badge.en_livraison { background:#d1ecf1; color:#0c5460; }
         .badge.en_attente { background: #FFF8E1; color: #F39C12; border: 1px solid #FFE082; }
         .badge.confirme { background: #E8F5E9; color: #2E7D32; border: 1px solid #A5D6A7; }
         .badge.expedie { background: #E3F2FD; color: #1565C0; border: 1px solid #90CAF9; }
@@ -105,6 +128,14 @@ try {
                 <div class="section-header">
                     <h2 class="section-title">Historique des commandes</h2>
                 </div>
+                <?php if($lastCommande): 
+                    // calculer badge pour statut (fonction déjà déclarée plus haut)
+                    $info = statutBadge($lastCommande['statut']);
+                    $badgeClass = $info['class'];
+                    $icon = $info['icon'];
+                ?>
+                <p style="margin-bottom:20px;">Votre dernière commande #<?= $lastCommande['id'] ?> est <span class="badge status-badge <?= $badgeClass ?>"><?= $icon ?> <?= ucfirst($lastCommande['statut']) ?></span></p>
+                <?php endif; ?>
                 
                 <?php if(empty($commandes)): ?>
                     <div style="text-align:center; padding:50px;">
@@ -119,24 +150,20 @@ try {
                                 <th>Référence</th>
                                 <th>Date</th>
                                 <th>Montant</th>
-                                <th>Statut</th>
                                 <th>Détails</th>
                             </tr>
                         </thead>
                         <tbody>
                             <?php foreach($commandes as $cmd): 
-                                $st = strtolower(trim($cmd['statut']));
-                                $cls = 'en_attente'; $icon = '<i class="fas fa-clock"></i>';
-                                if(strpos($st,'livre')!==false){ $cls='livre'; $icon='<i class="fas fa-check"></i>'; }
-                                elseif(strpos($st,'expedi')!==false){ $cls='expedie'; $icon='<i class="fas fa-truck"></i>'; }
-                                elseif(strpos($st,'confirm')!==false){ $cls='confirme'; $icon='<i class="fas fa-thumbs-up"></i>'; }
-                                elseif(strpos($st,'annul')!==false){ $cls='annule'; $icon='<i class="fas fa-times"></i>'; }
-                            ?>
+                                // statutBadge déjà défini plus haut, on l'utilise directement
+                                $info = statutBadge($cmd['statut']);
+                                $cls = $info['class'];
+                                $icon = $info['icon'];
+                            ?> 
                             <tr>
                                 <td><strong>#<?= $cmd['id'] ?></strong></td>
                                 <td><?= date('d/m/Y', strtotime($cmd['date_commande'])) ?></td>
                                 <td style="font-weight:700; color:var(--primary);"><?= number_format($cmd['total'], 2) ?> DH</td>
-                                <td><span class="badge <?= $cls ?>"><?= $icon ?> <?= ucfirst($cmd['statut']) ?></span></td>
                                 <td><a href="suivi.php?id=<?= $cmd['id'] ?>" class="btn-action">Voir</a></td>
                             </tr>
                             <?php endforeach; ?>

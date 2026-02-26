@@ -317,11 +317,11 @@
                 <ul class="contact-list">
                     <li>
                         <i class="fas fa-map-marker-alt"></i>
-                        <span>123 Bd Anfa,<br>Casablanca, Maroc</span>
+                        <span>Casablanca, Maroc</span>
                     </li>
                     <li>
                         <i class="fas fa-phone-alt"></i>
-                        <span>+212 5 22 00 00 00</span>
+                        <span>+212 6 57 88 29 49</span>
                     </li>
                     <li>
                         <i class="fas fa-envelope"></i>

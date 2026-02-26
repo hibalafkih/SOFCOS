@@ -237,8 +237,8 @@ $qr_url = "https://api.qrserver.com/v1/create-qr-code/?size=100x100&color=1A3C34
         <h1 class="brand-name">SOFCOS</h1>
         <div class="tagline">Cosmétiques Naturels</div>
         <div class="contact-info">
-            www.sofcos.com • contact@sofcos.com<br>
-            Safi, Maroc • +212 6 00 00 00 00
+            www.sofcos.com • contact            tree /F /A > structure.txt@sofcos.com<br>
+            CASABLANCA, Maroc • +212 6 57 88 29 49
         </div>
     </header>
 

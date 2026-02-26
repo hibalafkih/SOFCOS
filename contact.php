@@ -138,7 +138,7 @@ include 'includes/header.php';
             <div class="info-icon"><i class="fas fa-phone"></i></div>
             <div class="info-content">
                 <h4>Téléphone</h4>
-                <p>+212 6 00 11 22 33<br><span style="font-size:12px; opacity:0.7">9h-18h / Lundi au Samedi</span></p>
+                <p>+212 6 57 88 29 49<br><span style="font-size:12px; opacity:0.7">9h-18h / Lundi au Samedi</span></p>
             </div>
         </div>
         <div class="info-item">

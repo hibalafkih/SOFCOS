@@ -93,20 +93,37 @@ $produits = $stmt->fetchAll();
             --bg-body: #fdfdfd;
             --text-dark: #222;
             --border-light: #e5e5e5;
+            --banner-gradient: linear-gradient(45deg, #1A3C34, #24473d);
+            --badge-bg: #C5A059;
+            --hover-title: #8c6b3d;
+            --transition-fast: 0.2s;
+            --transition-slow: 0.4s;
         }
 
         body { background-color: var(--bg-body); font-family: 'Roboto', sans-serif; color: var(--text-dark); margin: 0; padding: 0; }
         
         /* En-tête */
         .shop-header-banner {
-            background-color: var(--shop-green);
+            background: var(--banner-gradient);
             color: white;
             text-align: center;
             padding: 60px 20px;
             margin-bottom: 50px;
+            position: relative;
+            overflow: hidden;
         }
-        .sh-title { font-family: 'Playfair Display', serif; font-size: 38px; font-weight: 400; letter-spacing: 2px; margin: 0; text-transform: uppercase; }
-        .sh-subtitle { font-family: 'Playfair Display', serif; color: var(--shop-gold); font-style: italic; margin-top: 10px; font-size: 16px; }
+        .shop-header-banner::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.2);
+            pointer-events: none;
+        }
+        .sh-title { font-family: 'Montserrat', sans-serif; font-size: 34px; font-weight: 600; letter-spacing: 1px; margin: 0; text-transform: uppercase; }
+        .sh-subtitle { font-family: 'Montserrat', sans-serif; color: var(--shop-gold); font-style: normal; margin-top: 8px; font-size: 14px; }
 
         .shop-container {
             display: flex;
@@ -133,6 +150,11 @@ $produits = $stmt->fetchAll();
             position: relative;
         }
         .filter-title::after { content: ''; display: block; width: 30px; height: 1px; background: var(--shop-gold); margin-top: 5px; }
+        .checkbox-label input:checked + .checkmark { background-color: var(--shop-green); border-color: var(--shop-green); }
+        .checkbox-label input:checked + .checkmark::after { border-color: white; }
+        .checkbox-label:hover .checkmark { border-color: var(--shop-green); }
+        .price-row input { transition: border-color var(--transition-fast); }
+        .price-row input:focus { border-color: var(--shop-green); box-shadow: 0 0 5px rgba(26,60,52,0.3); }
 
         .checkbox-label { display: flex; align-items: center; margin-bottom: 12px; cursor: pointer; font-size: 14px; color: #555; transition: 0.2s; }
         .checkbox-label:hover { color: var(--shop-green); }
@@ -160,22 +182,49 @@ $produits = $stmt->fetchAll();
         .res-count { font-size: 13px; color: #888; text-transform: uppercase; letter-spacing: 1px; }
         .sort-select { border: none; background: transparent; font-family: 'Roboto', sans-serif; color: #444; cursor: pointer; font-size: 14px; outline: none; font-weight: 500; }
 
-        .prod-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 40px; }
+        .prod-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 40px; }
 
         .prod-card { background: white; transition: all 0.4s ease; position: relative; }
         
         .pc-img-wrap {
-            height: 340px; width: 100%; position: relative; overflow: hidden;
+            height: 360px; width: 100%; position: relative; overflow: hidden;
             background-color: #f9f9f9; display: flex; align-items: center; justify-content: center;
         }
         .pc-img-wrap img {
             max-width: 100%; max-height: 100%; object-fit: cover; transition: transform 0.8s ease;
+            display: block;
         }
+        .pc-img-wrap {
+            position: relative;
+        }
+        .pc-img-wrap .img-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.3s;
+            color: white;
+            font-size: 24px;
+        }
+        .pc-img-wrap:hover .img-overlay { opacity: 1; }
         .prod-card:hover .pc-img-wrap img { transform: scale(1.08); }
 
         .pc-badge {
-            position: absolute; top: 0; left: 0; background: var(--shop-gold); color: white;
+            position: absolute; top: 10px; left: 10px; background: var(--badge-bg); color: white;
             font-size: 11px; font-weight: 700; padding: 6px 12px; z-index: 2; text-transform: uppercase; letter-spacing: 1px;
+            border-radius: 4px;
+            animation: badgePop 0.6s ease;
+        }
+        @keyframes badgePop {
+            0% { transform: scale(0); }
+            60% { transform: scale(1.2); }
+            100% { transform: scale(1); }
         }
 
         .pc-info { padding: 20px 0; text-align: center; }
@@ -183,21 +232,27 @@ $produits = $stmt->fetchAll();
         .pc-cat { color: #999; font-size: 11px; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 8px; display: block; }
         
         .pc-title {
-            font-family: 'Playfair Display', serif; font-size: 18px; color: #222;
+            font-family: 'Roboto', sans-serif; font-size: 18px; color: #222;
             text-decoration: none; font-weight: 600; display: block; margin-bottom: 8px; transition: 0.3s;
         }
-        .pc-title:hover { color: var(--shop-gold); }
+        .pc-title:hover { color: var(--hover-title); text-decoration: underline; /* garde Roboto ou hérite */ }
 
         .pc-price { font-size: 16px; font-weight: 500; color: var(--shop-green); }
         .pc-old-price { text-decoration: line-through; color: #ccc; font-size: 14px; margin-left: 8px; font-weight: 300; }
 
         .btn-add-text {
-            display: block; width: 100%; margin-top: 15px;
+            display: inline-flex; align-items: center; justify-content:center;
+            width: auto; margin-top: 8px;
             border: 1px solid var(--border-light); background: transparent; color: var(--text-dark);
-            padding: 12px 0; text-transform: uppercase; font-size: 11px; font-weight: 700; letter-spacing: 2px;
+            padding: 6px 14px; text-transform: uppercase; font-size: 10px; font-weight: 600; letter-spacing: 1px;
             cursor: pointer; transition: 0.3s;
+            border-radius: 20px;
+            font-family: 'Roboto', sans-serif;
         }
+        .btn-add-text i { margin-right: 6px; transition: transform 0.2s; }
         .btn-add-text:hover { border-color: var(--shop-green); background: var(--shop-green); color: white; }
+        .btn-add-text:active { transform: scale(0.97); }
+        .btn-add-text.added { background: #10b981; border-color:#10b981; color:white; }
 
         @media (max-width: 992px) {
             .shop-container { flex-direction: column; }
@@ -205,6 +260,63 @@ $produits = $stmt->fetchAll();
             .prod-grid { grid-template-columns: repeat(2, 1fr); gap: 20px; }
         }
         @media (max-width: 600px) { .prod-grid { grid-template-columns: 1fr; } }
+    </style>
+    
+    <!-- supplément de styles pour raffiner le design -->
+    <style>
+        /* palettes et corrections */
+        :root {
+            --bg-body: #fafafa;
+            --card-bg: #ffffff;
+        }
+
+        body {
+            background-color: var(--bg-body);
+        }
+
+        .shop-header-banner {
+            padding: 80px 20px;
+            margin-bottom: 60px;
+        }
+
+        /* sidebar sticky pour rester visible */
+        .sidebar {
+            position: sticky;
+            top: 120px;
+        }
+
+        /* cartes produit plus douces */
+        .prod-card {
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.05);
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+        .prod-card:hover {
+            /* suppression de l'effet d'agrandissement, on conserve juste l'ombre */
+            transform: none;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+        }
+
+        .pc-badge {
+            top: 12px;
+            left: 12px;
+            border-radius: 4px;
+        }
+
+        .btn-filter, .btn-add-text {
+            border-radius: 4px;
+        }
+
+        /* Inputs arrondis */
+        .price-input { border-radius: 4px; }
+
+        /* checkbox carrée améliorée */
+        .checkmark {
+            width: 18px;
+            height: 18px;
+            border-radius: 4px;
+        }
     </style>
 </head>
 <body>
@@ -307,10 +419,15 @@ $produits = $stmt->fetchAll();
                             <div class="pc-img-wrap">
                                 <a href="produit-detail.php?id=<?= $p['id'] ?>">
                                     <?php 
-                                        $img = !empty($p['image']) ? 'uploads/produits/' . $p['image'] : 'images/default.jpg';
-                                        if (!file_exists($img)) $img = 'images/default.jpg';
+                                        // design spécial : si image manquante, on utilise un placeholder SVG
+                                        $img = !empty($p['image']) ? 'uploads/produits/' . $p['image'] : '';
+                                        if ($img === '' || !file_exists($img)) {
+                                            // image par défaut stylisée
+                                            $img = 'images/default.jpg';
+                                        }
                                     ?>
                                     <img src="<?= htmlspecialchars($img) ?>" alt="<?= htmlspecialchars($p['nom']) ?>">
+                                    <span class="img-overlay"><i class="fas fa-search-plus"></i></span>
                                 </a>
                             </div>
 
@@ -333,7 +450,7 @@ $produits = $stmt->fetchAll();
                                     <input type="hidden" name="quantite" value="1">
                                     
                                     <?php if($p['stock'] > 0): ?>
-                                        <button type="submit" class="btn-add-text">Ajouter au panier</button>
+                                        <button type="submit" class="btn-add-text"><i class="fas fa-shopping-cart"></i>Ajouter au panier</button>
                                     <?php else: ?>
                                         <button type="button" class="btn-add-text" style="color:#ccc; border-color:#eee; cursor:default;" disabled>Rupture</button>
                                     <?php endif; ?>
@@ -355,5 +472,21 @@ $produits = $stmt->fetchAll();
     </div>
 
     <?php include 'includes/footer.php'; ?>
+
+    <script>
+        // animation & feedback pour boutons ajouter
+        document.querySelectorAll('.btn-add-text').forEach(btn => {
+            btn.addEventListener('click', function(e) {
+                // prevent double submit
+                if(btn.classList.contains('added')) return;
+                btn.classList.add('added');
+                // change icon/text
+                btn.innerHTML = '<i class="fas fa-check"></i>Ajouté';
+                // submit parent form
+                const form = btn.closest('form');
+                if(form) form.submit();
+            });
+        });
+    </script>
 </body>
 </html>

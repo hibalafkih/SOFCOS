@@ -25,6 +25,8 @@ try {
     $cmdStmt = $pdo->prepare("SELECT * FROM commandes WHERE client_id = ? ORDER BY date_commande DESC LIMIT 5");
     $cmdStmt->execute([$client_id]);
     $commandes = $cmdStmt->fetchAll();
+    // extra : conserver la dernière commande pour statut affiché en haut
+    $lastCommande = $commandes[0] ?? null;
 
     // Stats
     $countAll = $pdo->prepare("SELECT COUNT(*) FROM commandes WHERE client_id = ?");
@@ -175,8 +177,7 @@ try {
         .cmd-table td { padding: 15px; border-bottom: 1px solid #f0f0f0; font-size: 14px; }
         .cmd-table tr:last-child td { border-bottom: none; }
         
-        /* Badges */
-        
+        /* Badges styles removed since status is no longer shown */
 
         .btn-view {
             padding: 8px 16px; background: var(--white); border: 1px solid var(--gray-light);
@@ -240,6 +241,7 @@ try {
 
         <div class="section-box">
             <h2 class="section-title">Dernières commandes</h2>
+
             <?php if(empty($commandes)): ?>
                 <p style="text-align:center; color:#999; padding:20px;">Aucune commande pour le moment.</p>
             <?php else: ?>
@@ -249,45 +251,20 @@ try {
                             <th>N° Com.</th>
                             <th>Date</th>
                             <th>Total</th>
-                            <th>Statut</th>
                             <th>Action</th>
                         </tr>
                     </thead>
                     <tbody>
     <?php foreach($commandes as $cmd): 
-        // 1. Nettoyage du statut pour éviter les erreurs
-        $st = strtolower(trim($cmd['statut'])); // tout en minuscule, sans espaces
-        
-        // 2. Définition de la classe CSS et du texte
-        $badgeClass = 'en_attente'; // Par défaut
-        $icon = '<i class="fas fa-clock"></i>';
-
-        if(strpos($st, 'livre') !== false) {
-            $badgeClass = 'livre';
-            $icon = '<i class="fas fa-check-circle"></i>';
-        }
-        elseif(strpos($st, 'expedi') !== false) {
-            $badgeClass = 'expedie';
-            $icon = '<i class="fas fa-truck"></i>';
-        }
-        elseif(strpos($st, 'confirm') !== false) {
-            $badgeClass = 'confirme';
-            $icon = '<i class="fas fa-thumbs-up"></i>';
-        }
-        elseif(strpos($st, 'annul') !== false) {
-            $badgeClass = 'annule';
-            $icon = '<i class="fas fa-times-circle"></i>';
-        }
+        // statut supprimé, on n'affiche rien ici
+        $badgeClass = '';
+        $icon = '';
     ?>
     <tr>
         <td><strong>#<?= $cmd['id'] ?></strong></td>
         <td><?= date('d/m/Y', strtotime($cmd['date_commande'])) ?></td>
         <td style="font-weight:600;"><?= number_format($cmd['total'], 2) ?> DH</td>
-        <td>
-            <span class="badge <?= $badgeClass ?>">
-                <?= $icon ?> <?= ucfirst($cmd['statut']) ?>
-            </span>
-        </td>
+
         <td><a href="suivi.php?id=<?= $cmd['id'] ?>" class="btn-view">Gérer</a></td>
     </tr>
     <?php endforeach; ?>

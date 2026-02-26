@@ -141,7 +141,7 @@ function isActive($page) {
         <div class="container tb-content">
             <div><i class="fas fa-truck"></i> Livraison offerte dès 500 MAD • Paiement à la livraison</div>
             <div class="tb-right">
-                <span><i class="fas fa-phone-alt"></i> 06 00 00 00 00</span>
+                <span><i class="fas fa-phone-alt"></i> 06 57 88 29 49</span>
                 <span>Service Client</span>
             </div>
         </div>

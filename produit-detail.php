@@ -80,6 +80,10 @@ $avis_clients = [
         body { background-color: var(--bg-body); font-family: 'Roboto', sans-serif; color: var(--text-dark); margin: 0; padding: 0; }
         
         /* Layout global */
+        :root {
+            --rel-card-gap: 30px;
+            --thumb-size: 70px;
+        }
         .container { max-width: 1250px; margin: 0 auto; padding: 0 20px; }
 
         /* Fil d'Ariane */
@@ -95,7 +99,8 @@ $avis_clients = [
         /* --- FICHE PRODUIT --- */
         .product-wrapper { display: flex; flex-wrap: wrap; gap: 60px; margin-bottom: 80px; }
         .product-gallery { flex: 1; min-width: 350px; }
-        .main-img-box { width: 100%; background-color: #f9f9f9; display: flex; align-items: center; justify-content: center; overflow: hidden; border: 1px solid var(--border-light); }
+        .main-img-box { width: 100%; background-color: #f9f9f9; display: flex; align-items: center; justify-content: center; overflow: hidden; border: 1px solid var(--border-light); border-radius: 8px; box-shadow: 0 4px 16px rgba(0,0,0,0.05); transition: box-shadow 0.3s; }
+        .main-img-box:hover { box-shadow: 0 8px 24px rgba(0,0,0,0.1); }
         .main-img-box img { width: 100%; height: auto; max-height: 600px; object-fit: contain; display: block; transition: transform 0.5s ease; }
         .main-img-box:hover img { transform: scale(1.05); }
 
@@ -111,7 +116,7 @@ $avis_clients = [
         .pi-desc-short { color: #555; line-height: 1.8; margin-bottom: 35px; font-weight: 300; font-size: 15px; }
 
         /* Actions */
-        .pi-actions { display: flex; gap: 20px; align-items: stretch; margin-bottom: 40px; }
+        .pi-actions { display: flex; gap: 20px; align-items: stretch; margin-bottom: 40px; position: sticky; top: 120px; background: white; padding-top: 20px; z-index: 10; }
         .qty-input { width: 70px; text-align: center; border: 1px solid var(--shop-green); font-family: 'Roboto', sans-serif; font-size: 16px; color: var(--shop-green); outline: none; border-radius: 0; background: transparent; }
         .btn-add-luxe { flex-grow: 1; background: var(--shop-green); color: white; border: 1px solid var(--shop-green); text-transform: uppercase; font-size: 13px; font-weight: 700; letter-spacing: 2px; cursor: pointer; transition: 0.3s; padding: 16px 30px; border-radius: 0; }
         .btn-add-luxe:hover { background: white; color: var(--shop-green); }
@@ -240,8 +245,9 @@ $avis_clients = [
         @media (max-width: 900px) {
             .product-wrapper { flex-direction: column; gap: 30px; }
             .content-sections { grid-template-columns: 1fr; gap: 40px; }
-            .pi-actions { flex-direction: column; }
+            .pi-actions { flex-direction: column; position: relative; top: auto; padding-top: 0; }
             .qty-input { width: 100%; padding: 10px; }
+            :root { --thumb-size: 60px; }
         }
     </style>
 </head>
@@ -262,7 +268,12 @@ $avis_clients = [
             
             <div class="product-gallery">
     <div class="main-image-container">
-        <img id="mainImage" src="<?= htmlspecialchars($img_path) ?>" alt="<?= htmlspecialchars($produit['nom']) ?>">
+        <img id="mainImage" src="<?= htmlspecialchars($img_path) ?>" alt="<?= htmlspecialchars($produit['nom']) ?>" style="cursor: zoom-in;">
+    </div>
+    <!-- lightbox overlay -->
+    <div id="lightboxOverlay" style="display:none;">
+        <span id="lbClose">&times;</span>
+        <img id="lbImage" src="" alt="">
     </div>
 
     <div class="thumbnails-row">
@@ -295,6 +306,25 @@ $avis_clients = [
         gap: 10px;
         margin-top: 15px;
         overflow-x: auto; /* Permet de scroller si trop d'images */
+    }
+    .thumb-item {
+        width: var(--thumb-size);
+        height: var(--thumb-size);
+        border: 2px solid transparent;
+        border-radius: 8px;
+        cursor: pointer;
+        opacity: 0.6;
+        transition: 0.3s;
+    }
+    .thumb-item img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        border-radius: 6px;
+    }
+    .thumb-item:hover, .thumb-item.active {
+        border-color: #10b981; /* Couleur verte SOFCOS */
+        opacity: 1;
     }
 
     .thumb-item {
@@ -333,6 +363,24 @@ $avis_clients = [
     }
 </script>
 
+<script>
+    // zoom/lightbox behavior for main image
+    const mainImg = document.getElementById('mainImage');
+    const overlay = document.getElementById('lightboxOverlay');
+    const lbImg = document.getElementById('lbImage');
+    const lbClose = document.getElementById('lbClose');
+
+    mainImg.addEventListener('click', () => {
+        lbImg.src = mainImg.src;
+        overlay.style.display = 'flex';
+    });
+    lbClose.addEventListener('click', () => { overlay.style.display = 'none'; });
+    overlay.addEventListener('click', (e) => {
+        if (e.target === overlay || e.target === lbImg) {
+            overlay.style.display = 'none';
+        }
+    });
+</script>
             <div class="product-info">
                 <span class="pi-brand"><?= htmlspecialchars($marque) ?></span>
                 <h1 class="pi-title"><?= htmlspecialchars($produit['nom']) ?></h1>
