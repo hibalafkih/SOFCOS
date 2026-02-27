@@ -4,28 +4,10 @@
 // ============================================================
 
 // 1. Configuration & Session
-if (file_exists('config.php')) { require_once 'config.php'; } 
-else { require_once '../config.php'; }
+require_once 'config.php'; // config.php gère déjà la session
+require_once 'includes/EmailManager.php'; // On inclut notre gestionnaire d'emails
 
-if (session_status() === PHP_SESSION_NONE) { session_start(); }
-
-// 2. Chargement PHPMailer (Si disponible, sinon on ignore sans planter)
-$root = __DIR__;
-$use_mail = false;
-if (file_exists($root . '/vendor/autoload.php')) {
-    require_once $root . '/vendor/autoload.php';
-    $use_mail = true;
-} elseif (file_exists($root . '/PHPMailer/src/Exception.php')) {
-    require_once $root . '/PHPMailer/src/Exception.php';
-    require_once $root . '/PHPMailer/src/PHPMailer.php';
-    require_once $root . '/PHPMailer/src/SMTP.php';
-    $use_mail = true;
-}
-
-use PHPMailer\PHPMailer\PHPMailer;
-use PHPMailer\PHPMailer\Exception;
-
-// 3. Vérifications de base
+// 2. Vérifications de base
 if (empty($_SESSION['panier'])) {
     header('Location: produits.php');
     exit();
@@ -34,7 +16,7 @@ if (empty($_SESSION['panier'])) {
 // Récupération ID Client
 $client_id = isset($_SESSION['client_id']) ? $_SESSION['client_id'] : null;
 
-// 4. Connexion BDD
+// 3. Connexion BDD
 try {
     $db = new PDO("mysql:host=localhost;dbname=sofcos_db;charset=utf8", "root", "");
     $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
@@ -42,14 +24,14 @@ try {
     die("Erreur de connexion BDD : " . $e->getMessage());
 }
 
-// 5. Récupération des données POST
+// 4. Récupération des données POST
 $nom = htmlspecialchars($_POST['nom'] ?? '');
 $telephone = htmlspecialchars($_POST['telephone'] ?? '');
 $ville = htmlspecialchars($_POST['ville'] ?? '');
 $adresse = htmlspecialchars($_POST['adresse'] ?? '');
 $email_client = htmlspecialchars($_POST['email'] ?? '');
 
-// 6. Préparation des données produits
+// 5. Préparation des données produits
 $ids = array_keys($_SESSION['panier']);
 if(empty($ids)) die("Panier vide");
 
@@ -81,7 +63,7 @@ foreach ($produits_db as $p) {
 $frais_livraison = ($total_produits >= 500) ? 0 : 30;
 $total_final = $total_produits + $frais_livraison;
 
-// 7. TRANSACTION SQL
+// 6. TRANSACTION SQL
 try {
     $db->beginTransaction();
 
@@ -121,33 +103,38 @@ try {
 
     $db->commit();
 
-    // 8. ENVOI EMAIL (Optionnel, dans un bloc try séparé pour ne pas bloquer)
-    if ($use_mail && !empty($email_client)) {
-        try {
-            $mail = new PHPMailer(true);
-            $mail->isSMTP();
-            $mail->Host = 'smtp.gmail.com'; 
-            $mail->SMTPAuth = true;
-            $mail->Username = 'votre_email@gmail.com'; // À configurer
-            $mail->Password = 'votre_mot_de_passe_app'; // À configurer
-            $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
-            $mail->Port = 587;
-            $mail->CharSet = 'UTF-8';
-
-            $mail->setFrom('noreply@sofcos.com', 'SOFCOS');
-            $mail->addAddress($email_client, $nom);
-            
-            $mail->isHTML(true);
-            $mail->Subject = "Confirmation commande #$commande_id";
-            $mail->Body = "<h3>Merci $nom !</h3><p>Votre commande #$commande_id d'un total de $total_final DH a bien été reçue.</p>";
-            
-            $mail->send();
-        } catch (Exception $e) {
-            // On ignore l'erreur mail pour ne pas bloquer la commande
+    // 7. ENVOI DE L'EMAIL DE CONFIRMATION via EmailManager
+    // On vérifie que la classe existe (au cas où le fichier serait manquant) et que l'email est fourni
+    if (class_exists('EmailManager') && !empty($email_client)) {
+        
+        // A. Préparation du tableau de produits au format attendu par l'EmailManager
+        $produits_pour_email = [];
+        foreach ($liste_finale as $item) {
+            $produits_pour_email[] = [
+                'nom' => $item['nom'],
+                'qte' => $item['quantite'],
+                'prix' => $item['prix_unitaire']
+            ];
         }
+        
+        // B. Appel de la méthode centralisée pour envoyer l'email
+        // EmailManager gère déjà les erreurs en interne, donc pas besoin de try/catch ici
+        EmailManager::envoyerConfirmationCommande(
+            $email_client,
+            $nom,
+            $commande_id,
+            date('d/m/Y H:i'),
+            'Paiement à la livraison',
+            $produits_pour_email,
+            $total_produits, // sous-total
+            $frais_livraison,
+            $total_final, // total
+            $adresse . "\n" . $ville, // Adresse complète
+            $telephone
+        );
     }
 
-    // 9. FIN ET REDIRECTION
+    // 8. FIN ET REDIRECTION
     unset($_SESSION['panier']);
     header("Location: confirmation.php?id=" . $commande_id);
     exit();

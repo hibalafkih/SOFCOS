@@ -1,24 +1,14 @@
-# Fichiers sensibles
+# Fichier de configuration local. NE PAS VERSIONNER.
 .env
-config.local.php
 
-# Dépendances
+# Dépendances Composer
 /vendor/
 
-# Uploads
-/uploads/
+# Fichiers de test et de débogage
+test-commande-mail.php
+test-mail.php
+debug.php
 
-# Cache / logs
-*.log
-*.cache
-
-# IDE
-.vscode/
-
-# OS
+# Fichiers système (macOS, Windows)
 .DS_Store
 Thumbs.db
-.env
-config.php.bak
-/vendor/
-.DS_Store

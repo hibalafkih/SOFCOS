@@ -112,34 +112,160 @@ class EmailManager {
         }
     }
     // DANS EmailManager.php
-
-public static function envoyerConfirmationCommande($emailClient, $nomClient, $commandeId, $total) {
+public static function envoyerConfirmationCommande(
+    $emailClient, 
+    $nomClient, 
+    $commandeId, 
+    $dateCommande, 
+    $methodePaiement, 
+    $produits, // Doit être un tableau (array) contenant les articles
+    $sousTotal, 
+    $fraisLivraison, 
+    $total, 
+    $adresseLivraison, 
+    $telephone
+) {
     try {
         $mail = self::getMailer();
-        $mail->addAddress($emailClient);
+        $mail->addAddress($emailClient, $nomClient);
         $mail->Subject = "Confirmation de votre commande #$commandeId - SOFCOS";
 
+        // Nettoyage et formatage
+        $nom = htmlspecialchars(strtoupper($nomClient), ENT_QUOTES, 'UTF-8');
+        
+        // Construction des lignes du tableau des produits
+        $lignesProduitsHtml = "";
+        foreach ($produits as $produit) {
+            $nomProduit = htmlspecialchars($produit['nom'], ENT_QUOTES, 'UTF-8');
+            $qte = (int)$produit['qte'];
+            $prix = number_format((float)$produit['prix'], 2, '.', ' ');
+            
+            $lignesProduitsHtml .= "
+            <tr>
+                <td style='padding: 12px 0; border-bottom: 1px solid #eee; color: #333; font-size: 14px;'>$nomProduit</td>
+                <td style='padding: 12px 0; border-bottom: 1px solid #eee; text-align: center; color: #666; font-size: 14px;'>$qte</td>
+                <td style='padding: 12px 0; border-bottom: 1px solid #eee; text-align: right; color: #333; font-weight:bold; font-size: 14px;'>$prix DH</td>
+            </tr>";
+        }
+
+        // Formatage des totaux
+        $sousTotalFmt = number_format((float)$sousTotal, 2, '.', ' ');
+        $totalFmt = number_format((float)$total, 2, '.', ' ');
+        
+        // Gestion de l'affichage de la livraison (Texte vert si "OFFERTE", sinon affichage du prix)
+        $livraisonAffichage = (strtoupper($fraisLivraison) === 'OFFERTE' || $fraisLivraison == 0) 
+            ? "<span style='color: #008000; font-weight: bold;'>OFFERTE</span>" 
+            : number_format((float)$fraisLivraison, 2, '.', ' ') . " DH";
+
         $mail->Body = "
-            <div style='font-family: Montserrat, sans-serif; color: #333;'>
-                <h2 style='color: #1A3C34;'>Merci pour votre commande, $nomClient !</h2>
-                <p>Votre commande <strong>#$commandeId</strong> a bien été enregistrée.</p>
-                <p>Montant total : <strong>" . number_format($total, 2) . " DH</strong></p>
-                <p>Nous préparons votre colis avec le plus grand soin.</p>
-                <hr>
-                <p>Vous pouvez suivre votre commande sur votre compte client.</p>
-                <br>
-                <a href='http://localhost/SOFCOS/suivi.php' style='background-color:#C5A059; color:white; padding:10px 20px; text-decoration:none; border-radius:5px;'>Suivre ma commande</a>
-            </div>
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset='UTF-8'>
+            <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+            <title>Confirmation de Commande</title>
+        </head>
+        <body style='margin: 0; padding: 0; background-color: #f4f4f4; font-family: \"Helvetica Neue\", Helvetica, Arial, sans-serif; color: #333;'>
+            <table role='presentation' width='100%' border='0' cellspacing='0' cellpadding='0'>
+                <tr>
+                    <td align='center' style='padding: 40px 0;'>
+                        <!-- Main Container -->
+                        <table role='presentation' width='600' border='0' cellspacing='0' cellpadding='0' style='background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.05);'>
+                            
+                            <!-- Header -->
+                            <tr>
+                                <td align='center' style='background-color: #1A3C34; padding: 35px;'>
+                                    <h1 style='color: #C5A059; margin: 0; font-family: \"Times New Roman\", serif; letter-spacing: 3px; font-size: 28px; text-transform: uppercase;'>SOFCOS</h1>
+                                    <p style='color: #a3b5b0; margin: 8px 0 0; font-size: 11px; text-transform: uppercase; letter-spacing: 2px;'>L'élégance Naturelle</p>
+                                </td>
+                            </tr>
+
+                            <!-- Body Content -->
+                            <tr>
+                                <td style='padding: 40px 30px;'>
+                                    <h2 style='color: #1A3C34; margin-top: 0; font-size: 22px; font-weight: 400;'>Merci pour votre commande, $nom !</h2>
+                                    <p style='color: #666; line-height: 1.6; font-size: 15px;'>
+                                        Nous avons bien reçu votre commande <strong>#$commandeId</strong> du $dateCommande.
+                                        Elle est actuellement en cours de préparation par nos soins avec la plus grande attention.
+                                    </p>
+
+                                    <!-- Order Info Box -->
+                                    <table width='100%' cellpadding='0' cellspacing='0' style='margin: 30px 0; background-color: #fcfcfc; border-radius: 6px; border: 1px solid #eee;'>
+                                        <tr>
+                                            <td style='padding: 20px; vertical-align: top;'>
+                                                <p style='margin: 0; font-size: 12px; color: #999; text-transform: uppercase; letter-spacing: 1px; font-weight: bold;'>Livraison</p>
+                                                <p style='margin: 8px 0 0; font-size: 14px; color: #333; line-height: 1.5;'>
+                                                    <strong>$nom</strong><br>
+                                                    " . nl2br(htmlspecialchars($adresseLivraison)) . "<br>
+                                                    Tél: " . htmlspecialchars($telephone) . "
+                                                </p>
+                                            </td>
+                                            <td style='padding: 20px; border-left: 1px solid #eee; vertical-align: top;'>
+                                                <p style='margin: 0; font-size: 12px; color: #999; text-transform: uppercase; letter-spacing: 1px; font-weight: bold;'>Paiement</p>
+                                                <p style='margin: 8px 0 0; font-size: 14px; color: #333;'><strong>$methodePaiement</strong></p>
+                                            </td>
+                                        </tr>
+                                    </table>
+
+                                    <!-- Products Table -->
+                                    <h3 style='color: #1A3C34; font-size: 16px; border-bottom: 2px solid #C5A059; padding-bottom: 10px; margin-bottom: 20px; display: inline-block; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;'>Récapitulatif</h3>
+                                    
+                                    <table width='100%' cellpadding='0' cellspacing='0' style='border-collapse: collapse;'>
+                                        <thead>
+                                            <tr>
+                                                <th align='left' style='padding: 10px 0; border-bottom: 1px solid #eee; color: #999; font-size: 11px; text-transform: uppercase; letter-spacing: 1px;'>Produit</th>
+                                                <th align='center' style='padding: 10px 0; border-bottom: 1px solid #eee; color: #999; font-size: 11px; text-transform: uppercase; letter-spacing: 1px;'>Qté</th>
+                                                <th align='right' style='padding: 10px 0; border-bottom: 1px solid #eee; color: #999; font-size: 11px; text-transform: uppercase; letter-spacing: 1px;'>Prix</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            $lignesProduitsHtml
+                                        </tbody>
+                                        <tfoot>
+                                            <tr>
+                                                <td colspan='2' align='right' style='padding-top: 20px; color: #666; font-size: 14px;'>Sous-total :</td>
+                                                <td align='right' style='padding-top: 20px; color: #333; font-size: 14px;'>$sousTotalFmt DH</td>
+                                            </tr>
+                                            <tr>
+                                                <td colspan='2' align='right' style='padding-top: 8px; color: #666; font-size: 14px;'>Livraison :</td>
+                                                <td align='right' style='padding-top: 8px; color: #333; font-size: 14px;'>$livraisonAffichage</td>
+                                            </tr>
+                                            <tr>
+                                                <td colspan='2' align='right' style='padding-top: 15px; color: #1A3C34; font-size: 18px; font-weight: bold;'>Total :</td>
+                                                <td align='right' style='padding-top: 15px; color: #1A3C34; font-size: 18px; font-weight: bold;'>$totalFmt DH</td>
+                                            </tr>
+                                        </tfoot>
+                                    </table>
+
+                                    <div style='margin-top: 40px; text-align: center;'>
+                                        <a href='http://localhost/SOFCOS/mon-compte.php' style='background-color: #1A3C34; color: #ffffff; text-decoration: none; padding: 14px 30px; border-radius: 4px; font-size: 14px; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;'>Suivre ma commande</a>
+                                    </div>
+                                </td>
+                            </tr>
+
+                            <!-- Footer -->
+                            <tr>
+                                <td align='center' style='background-color: #f8f8f8; padding: 25px; border-top: 1px solid #eee;'>
+                                    <p style='margin: 0; font-size: 13px; color: #888;'>Besoin d'aide ? Contactez-nous à <a href='mailto:contact@sofcos.ma' style='color: #1A3C34; text-decoration: none; font-weight: bold;'>contact@sofcos.ma</a></p>
+                                    <p style='margin: 10px 0 0; font-size: 11px; color: #ccc;'>&copy; " . date('Y') . " SOFCOS. Tous droits réservés.</p>
+                                </td>
+                            </tr>
+                        </table>
+                    </td>
+                </tr>
+            </table>
+        </body>
+        </html>
         ";
         
-        $mail->AltBody = "Merci $nomClient. Votre commande #$commandeId de " . number_format($total, 2) . " DH est confirmée.";
+        $mail->AltBody = "Bonjour $nom,\n\nMerci pour votre commande #$commandeId.\nTotal: $totalFmt DH.\nElle est en cours de préparation.";
 
-        $mail->send();
-        return true;
+        return $mail->send();
     } catch (Exception $e) {
         return false;
     }
 }
+}
 
-} // Fin de la classe EmailManager
+// Fin de la classe EmailManager
 ?>
