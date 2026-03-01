@@ -32,9 +32,7 @@ if(!isset($_SESSION['livreur_id'])) { header("Location: login.php"); exit(); }
 
     <script>
         function onScanSuccess(decodedText, decodedResult) {
-            // Le texte du QR est "Commande #123 | Client..."
-            // On veut juste le "123"
-            
+        
             // Regex pour trouver le premier nombre dans le texte
             let matches = decodedText.match(/(\d+)/);
             

@@ -18,12 +18,12 @@ if($commande) {
     // 2. Mise à jour : Statut = LIVRE
     $update = $pdo->prepare("UPDATE commandes SET statut = 'livre', statut_paiement = 'paye' WHERE id = ?");
     $update->execute([$id_cmd]);
-    $msg = "✅ Commande #$id_cmd validée !";
+    $msg = "Commande #$id_cmd validée !";
     $color = "#10b981"; // Vert
     $icon = "fa-check-circle";
 } else {
     // Erreur : Ce n'est pas sa commande ou elle n'existe pas
-    $msg = "❌ Erreur : Commande non assignée à vous.";
+    $msg = " Erreur : Commande non assignée à vous.";
     $color = "#ef4444"; // Rouge
     $icon = "fa-times-circle";
 }
